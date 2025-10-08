@@ -1,0 +1,477 @@
+[
+  {
+    "inputs": [
+      { "internalType": "address", "name": "_usdtToken", "type": "address" },
+      { "internalType": "address", "name": "_oneDreamToken", "type": "address" },
+      { "internalType": "address", "name": "_pancakeSwapPair", "type": "address" }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true, "internalType": "address", "name": "owner", "type": "address" },
+      { "indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256" }
+    ],
+    "name": "OneDreamWithdrawn",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true, "internalType": "address", "name": "previousOwner", "type": "address" },
+      { "indexed": true, "internalType": "address", "name": "newOwner", "type": "address" }
+    ],
+    "name": "OwnershipTransferred",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true, "internalType": "uint256", "name": "packageId", "type": "uint256" },
+      { "indexed": false, "internalType": "string", "name": "name", "type": "string" },
+      { "indexed": false, "internalType": "uint256", "name": "minAmount", "type": "uint256" },
+      { "indexed": false, "internalType": "uint256", "name": "maxAmount", "type": "uint256" },
+      { "indexed": false, "internalType": "uint256", "name": "dailyRate", "type": "uint256" },
+      { "indexed": false, "internalType": "uint256", "name": "baseDuration", "type": "uint256" },
+      { "indexed": false, "internalType": "uint256", "name": "referralBonus", "type": "uint256" }
+    ],
+    "name": "PackageCreated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true, "internalType": "uint256", "name": "packageId", "type": "uint256" },
+      { "indexed": false, "internalType": "bool", "name": "active", "type": "bool" }
+    ],
+    "name": "PackageUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true, "internalType": "address", "name": "newPair", "type": "address" },
+      { "indexed": false, "internalType": "bool", "name": "token0IsOneDream", "type": "bool" }
+    ],
+    "name": "PancakeSwapPairUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true, "internalType": "address", "name": "referrer", "type": "address" },
+      { "indexed": true, "internalType": "address", "name": "referee", "type": "address" },
+      { "indexed": false, "internalType": "uint256", "name": "bonusDays", "type": "uint256" }
+    ],
+    "name": "ReferralAdded",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true, "internalType": "address", "name": "user", "type": "address" },
+      { "indexed": false, "internalType": "uint256", "name": "bonusAmount", "type": "uint256" }
+    ],
+    "name": "RestakeBonusClaimed",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true, "internalType": "address", "name": "user", "type": "address" },
+      { "indexed": false, "internalType": "uint256", "name": "oneDreamAmount", "type": "uint256" }
+    ],
+    "name": "RewardsClaimed",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true, "internalType": "address", "name": "user", "type": "address" },
+      { "indexed": true, "internalType": "uint256", "name": "packageId", "type": "uint256" },
+      { "indexed": false, "internalType": "uint256", "name": "usdtAmount", "type": "uint256" },
+      { "indexed": true, "internalType": "address", "name": "referrer", "type": "address" }
+    ],
+    "name": "Staked",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true, "internalType": "address", "name": "owner", "type": "address" },
+      { "indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256" }
+    ],
+    "name": "UsdtWithdrawn",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "BASIS_POINTS",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "RESTAKE_BONUS_BP",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "name": "allStakers",
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "address", "name": "_user", "type": "address" }],
+    "name": "calculatePendingRewards",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "address", "name": "_user", "type": "address" }],
+    "name": "canRestake",
+    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "claimRestakeBonus",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "claimRewards",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "completeStake",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "string", "name": "_name", "type": "string" },
+      { "internalType": "uint256", "name": "_minAmount", "type": "uint256" },
+      { "internalType": "uint256", "name": "_maxAmount", "type": "uint256" },
+      { "internalType": "uint256", "name": "_dailyRateBasisPoints", "type": "uint256" },
+      { "internalType": "uint256", "name": "_baseDurationDays", "type": "uint256" },
+      { "internalType": "uint256", "name": "_referralBonusDays", "type": "uint256" }
+    ],
+    "name": "createPackage",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getActivePackages",
+    "outputs": [
+      {
+        "components": [
+          { "internalType": "uint256", "name": "id", "type": "uint256" },
+          { "internalType": "string", "name": "name", "type": "string" },
+          { "internalType": "uint256", "name": "minAmount", "type": "uint256" },
+          { "internalType": "uint256", "name": "maxAmount", "type": "uint256" },
+          { "internalType": "uint256", "name": "dailyRateBasisPoints", "type": "uint256" },
+          { "internalType": "uint256", "name": "baseDurationDays", "type": "uint256" },
+          { "internalType": "uint256", "name": "referralBonusDays", "type": "uint256" },
+          { "internalType": "bool", "name": "active", "type": "bool" }
+        ],
+        "internalType": "struct OneDreamVaultStaking.StakingPackage[]",
+        "name": "",
+        "type": "tuple[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getAllStakers",
+    "outputs": [{ "internalType": "address[]", "name": "", "type": "address[]" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getContractStats",
+    "outputs": [
+      { "internalType": "uint256", "name": "_totalUsdtStaked", "type": "uint256" },
+      { "internalType": "uint256", "name": "_totalStakers", "type": "uint256" },
+      { "internalType": "uint256", "name": "_totalRewardsPaid", "type": "uint256" },
+      { "internalType": "uint256", "name": "usdtBalance", "type": "uint256" },
+      { "internalType": "uint256", "name": "oneDreamBalance", "type": "uint256" },
+      { "internalType": "uint256", "name": "currentOneDreamPrice", "type": "uint256" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getOneDreamPrice",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "uint256", "name": "_packageId", "type": "uint256" }],
+    "name": "getPackage",
+    "outputs": [
+      { "internalType": "uint256", "name": "id", "type": "uint256" },
+      { "internalType": "string", "name": "name", "type": "string" },
+      { "internalType": "uint256", "name": "minAmount", "type": "uint256" },
+      { "internalType": "uint256", "name": "maxAmount", "type": "uint256" },
+      { "internalType": "uint256", "name": "dailyRateBasisPoints", "type": "uint256" },
+      { "internalType": "uint256", "name": "baseDurationDays", "type": "uint256" },
+      { "internalType": "uint256", "name": "referralBonusDays", "type": "uint256" },
+      { "internalType": "bool", "name": "active", "type": "bool" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getPackageCount",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "address", "name": "_user", "type": "address" }],
+    "name": "getReferralStats",
+    "outputs": [
+      { "internalType": "uint256", "name": "totalReferralCount", "type": "uint256" },
+      { "internalType": "address[]", "name": "referredUsersList", "type": "address[]" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "address", "name": "_user", "type": "address" }],
+    "name": "getTimeRemaining",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "address", "name": "_user", "type": "address" }],
+    "name": "getUserStake",
+    "outputs": [
+      { "internalType": "uint256", "name": "packageId", "type": "uint256" },
+      { "internalType": "uint256", "name": "usdtAmount", "type": "uint256" },
+      { "internalType": "uint256", "name": "startTime", "type": "uint256" },
+      { "internalType": "uint256", "name": "lastClaimTime", "type": "uint256" },
+      { "internalType": "uint256", "name": "baseDurationDays", "type": "uint256" },
+      { "internalType": "uint256", "name": "referralCount", "type": "uint256" },
+      { "internalType": "uint256", "name": "totalDurationDays", "type": "uint256" },
+      { "internalType": "uint256", "name": "restakeCount", "type": "uint256" },
+      { "internalType": "uint256", "name": "restakeBonus", "type": "uint256" },
+      { "internalType": "bool", "name": "restakeBonusClaimed", "type": "bool" },
+      { "internalType": "address", "name": "referrer", "type": "address" },
+      { "internalType": "bool", "name": "isActive", "type": "bool" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "name": "hasActiveStake",
+    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "nextPackageId",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "oneDreamToken",
+    "outputs": [{ "internalType": "contract IERC20", "name": "", "type": "address" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "owner",
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "name": "packages",
+    "outputs": [
+      { "internalType": "uint256", "name": "id", "type": "uint256" },
+      { "internalType": "string", "name": "name", "type": "string" },
+      { "internalType": "uint256", "name": "minAmount", "type": "uint256" },
+      { "internalType": "uint256", "name": "maxAmount", "type": "uint256" },
+      { "internalType": "uint256", "name": "dailyRateBasisPoints", "type": "uint256" },
+      { "internalType": "uint256", "name": "baseDurationDays", "type": "uint256" },
+      { "internalType": "uint256", "name": "referralBonusDays", "type": "uint256" },
+      { "internalType": "bool", "name": "active", "type": "bool" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "pancakeSwapPair",
+    "outputs": [{ "internalType": "contract IPancakeSwapV2Pair", "name": "", "type": "address" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "", "type": "address" },
+      { "internalType": "uint256", "name": "", "type": "uint256" }
+    ],
+    "name": "referredUsers",
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "uint256", "name": "_packageId", "type": "uint256" },
+      { "internalType": "bool", "name": "_active", "type": "bool" }
+    ],
+    "name": "setPackageActive",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "uint256", "name": "_packageId", "type": "uint256" },
+      { "internalType": "uint256", "name": "_usdtAmount", "type": "uint256" },
+      { "internalType": "address", "name": "_referrer", "type": "address" }
+    ],
+    "name": "stake",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "token0IsOneDream",
+    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "name": "totalReferrals",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "totalRewardsPaid",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "totalStakers",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "totalUsdtStaked",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "address", "name": "newOwner", "type": "address" }],
+    "name": "transferOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "uint256", "name": "_packageId", "type": "uint256" },
+      { "internalType": "string", "name": "_name", "type": "string" },
+      { "internalType": "uint256", "name": "_minAmount", "type": "uint256" },
+      { "internalType": "uint256", "name": "_maxAmount", "type": "uint256" },
+      { "internalType": "uint256", "name": "_dailyRateBasisPoints", "type": "uint256" },
+      { "internalType": "uint256", "name": "_baseDurationDays", "type": "uint256" },
+      { "internalType": "uint256", "name": "_referralBonusDays", "type": "uint256" },
+      { "internalType": "bool", "name": "_active", "type": "bool" }
+    ],
+    "name": "updatePackage",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "address", "name": "_newPair", "type": "address" }],
+    "name": "updatePancakeSwapPair",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "name": "userStakes",
+    "outputs": [
+      { "internalType": "uint256", "name": "packageId", "type": "uint256" },
+      { "internalType": "uint256", "name": "usdtAmount", "type": "uint256" },
+      { "internalType": "uint256", "name": "startTime", "type": "uint256" },
+      { "internalType": "uint256", "name": "lastClaimTime", "type": "uint256" },
+      { "internalType": "uint256", "name": "baseDurationDays", "type": "uint256" },
+      { "internalType": "uint256", "name": "referralCount", "type": "uint256" },
+      { "internalType": "uint256", "name": "totalDurationDays", "type": "uint256" },
+      { "internalType": "uint256", "name": "restakeCount", "type": "uint256" },
+      { "internalType": "uint256", "name": "restakeBonus", "type": "uint256" },
+      { "internalType": "bool", "name": "restakeBonusClaimed", "type": "bool" },
+      { "internalType": "address", "name": "referrer", "type": "address" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "usdtToken",
+    "outputs": [{ "internalType": "contract IERC20", "name": "", "type": "address" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "uint256", "name": "_amount", "type": "uint256" }],
+    "name": "withdrawOneDream",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "uint256", "name": "_amount", "type": "uint256" }],
+    "name": "withdrawUsdt",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]

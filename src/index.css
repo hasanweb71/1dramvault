@@ -1,0 +1,11 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Ensure text selection is enabled for referral links */
+.select-text {
+  -webkit-user-select: text; /* Safari */
+  -moz-user-select: text;    /* Firefox */
+  -ms-user-select: text;     /* IE 10+ */
+  user-select: text;         /* Standard */
+}

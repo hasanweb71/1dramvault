@@ -1,0 +1,334 @@
+═══════════════════════════════════════════════════════════════════════════════
+                     1DREAM DAPPS V2 DEPLOYMENT CHECKLIST
+═══════════════════════════════════════════════════════════════════════════════
+
+📋 PRE-DEPLOYMENT PREPARATION
+
+Environment Setup:
+[ ] Node.js and npm installed
+[ ] Hardhat or Truffle configured
+[ ] BSC network added to deployment config
+[ ] BSC wallet with BNB for gas fees (minimum 0.1 BNB)
+[ ] Access to 1DREAM tokens (100,000+ recommended)
+[ ] Supabase project access
+[ ] Git repository backed up
+
+Documentation Review:
+[ ] Read IMPLEMENTATION_COMPLETE.md
+[ ] Read QUICK_START_DEPLOYMENT.md
+[ ] Read DEPLOYMENT_GUIDE.md
+[ ] Read README_V2_MIGRATION.md
+[ ] Understand rollback procedures
+
+Wallet Preparation:
+[ ] Owner wallet address: _________________________________
+[ ] Owner wallet has BNB for gas
+[ ] Owner wallet has 1DREAM tokens for funding
+[ ] Private key stored securely
+[ ] Test wallet for testnet deployment
+
+═══════════════════════════════════════════════════════════════════════════════
+
+📝 PHASE 1: SMART CONTRACT DEPLOYMENT
+
+Testnet Deployment (DO THIS FIRST):
+[ ] Compile contract: npx hardhat compile
+[ ] Deploy to BSC Testnet
+[ ] Testnet contract address: _________________________________
+[ ] Verify on BSCscan Testnet
+[ ] BSCscan testnet verified: YES / NO
+
+Testnet Initialization:
+[ ] Add Flexible plan (8% APY, no lock)
+[ ] Add 90 Days plan (15% APY, 90d lock, 12% fee)
+[ ] Add 180 Days plan (25% APY, 180d lock, 15% fee)
+[ ] Fund contract with testnet 1DREAM tokens
+[ ] Verify commission is 500 (5%)
+[ ] Verify contract balance shows correct amount
+
+Testnet Testing (CRITICAL - Test Everything):
+[ ] Stake tokens (Flexible plan)
+[ ] Stake appears in user stakes list
+[ ] Wait 1 minute, claim small reward
+[ ] Reward claim successful
+[ ] Unstake tokens (no fee for Flexible)
+[ ] Unstake successful
+[ ] Stake with referral code
+[ ] Referral count increased by 1
+[ ] Claim referral bonus (5% of stake)
+[ ] Referral bonus claim successful
+[ ] Admin: Update commission to 300 (3%)
+[ ] Commission update successful
+[ ] New stake uses new 3% commission
+[ ] All calculations correct
+[ ] No reverted transactions
+[ ] Gas costs acceptable
+
+Mainnet Deployment (Only if testnet passed):
+[ ] Deploy to BSC Mainnet
+[ ] Mainnet contract address: _________________________________
+[ ] Verify on BSCscan Mainnet
+[ ] BSCscan mainnet verified: YES / NO
+[ ] Contract visible at: https://bscscan.com/address/__________
+
+Mainnet Initialization:
+[ ] Add Flexible plan
+    [ ] Transaction hash: _________________________________
+[ ] Add 90 Days plan
+    [ ] Transaction hash: _________________________________
+[ ] Add 180 Days plan
+    [ ] Transaction hash: _________________________________
+[ ] Fund contract with 1DREAM (Amount: ____________)
+    [ ] Transaction hash: _________________________________
+[ ] Verify all 3 plans active
+[ ] Verify commission is 500 (5%)
+[ ] Verify contract balance correct
+[ ] Total gas used: __________ BNB
+
+═══════════════════════════════════════════════════════════════════════════════
+
+💾 PHASE 2: DATABASE MIGRATION
+
+Pre-Migration:
+[ ] Access Supabase dashboard
+[ ] Backup current database
+[ ] Backup timestamp: _________________________________
+[ ] Backup location: _________________________________
+
+Migration Application:
+[ ] Open migration file: supabase/migrations/20250930120000_simplify_referral_system_v2.sql
+[ ] Review SQL statements
+[ ] Apply migration via: supabase db push
+    OR
+[ ] Run SQL manually in Supabase SQL editor
+
+Post-Migration Verification:
+[ ] Table "referral_config" exists
+[ ] Default rate (500) inserted and visible
+[ ] View "current_referral_rate" returns data
+[ ] Function "set_current_referral_rate" exists
+[ ] Column "commission_basis_points_at_stake" added to "referred_stakes"
+[ ] Existing "referred_stakes" data intact
+[ ] Existing "user_referral_stats" data intact
+[ ] All indexes created successfully
+[ ] RLS policies active and working
+[ ] No errors in Supabase logs
+
+═══════════════════════════════════════════════════════════════════════════════
+
+🎨 PHASE 3: FRONTEND CONFIGURATION
+
+Contract Address Update:
+[ ] File: src/hooks/useStakingData.ts
+    [ ] Line ~141: Update STAKING_CONTRACT_ADDRESS
+    [ ] New address: _________________________________
+    [ ] Replace STAKING_CONTRACT_ABI with V2 ABI
+    [ ] ABI pasted from: contracts/OneDreamStakingV2_ABI.json
+
+[ ] File: src/hooks/useReferralData.ts
+    [ ] Line ~7: Update STAKING_CONTRACT_ADDRESS
+    [ ] New address: _________________________________
+    [ ] Replace STAKING_CONTRACT_ABI with V2 ABI
+    [ ] ABI pasted from: contracts/OneDreamStakingV2_ABI.json
+
+Build Verification:
+[ ] Run: npm install (if needed)
+[ ] Run: npm run dev
+[ ] Local dev server starts without errors
+[ ] No TypeScript errors in console
+[ ] Visit http://localhost:5173
+[ ] Homepage loads correctly
+[ ] No console errors in browser
+
+Local Testing:
+[ ] Connect wallet (MetaMask/WalletConnect)
+[ ] Wallet connects successfully
+[ ] Navigate to Dapps page
+[ ] Staking plans display correctly
+[ ] Approve tokens for staking
+[ ] Stake tokens successfully
+[ ] User stakes appear in sidebar
+[ ] Claim rewards works
+[ ] Referral link generates correctly
+[ ] Referral commission shows as "5%" (not tiers)
+[ ] Admin panel accessible (if owner)
+[ ] Admin: Commission update form visible
+[ ] All features working as expected
+
+Production Build:
+[ ] Run: npm run build
+[ ] Build completes successfully
+[ ] No errors or warnings (ignore chunk size warning)
+[ ] dist/ folder created
+[ ] dist/index.html exists
+[ ] dist/assets/ folder has CSS and JS files
+
+═══════════════════════════════════════════════════════════════════════════════
+
+🚀 PHASE 4: PRODUCTION DEPLOYMENT
+
+Deployment:
+[ ] Upload dist/ folder to hosting platform
+[ ] Platform: _________________________________
+[ ] Production URL: _________________________________
+[ ] Deployment timestamp: _________________________________
+
+Production Verification:
+[ ] Visit production URL
+[ ] Website loads correctly
+[ ] All pages accessible
+[ ] Connect wallet (use real wallet, small amount)
+[ ] Wallet connects successfully
+[ ] Staking plans show correct data
+[ ] Can navigate all pages
+[ ] No console errors
+[ ] SSL certificate valid (https)
+[ ] Mobile responsive design works
+
+Light Production Testing (Use Small Amounts!):
+[ ] Approve small amount (e.g., 100 1DREAM)
+[ ] Stake small amount
+[ ] Transaction successful
+[ ] Stake appears in user interface
+[ ] Wait 5 minutes
+[ ] Claim small reward (~0.01 1DREAM)
+[ ] Reward claim successful
+[ ] Unstake successfully
+[ ] All features working correctly
+
+═══════════════════════════════════════════════════════════════════════════════
+
+📊 PHASE 5: POST-DEPLOYMENT MONITORING
+
+First Hour Checks:
+[ ] Hour 1: Contract activity on BSCscan
+[ ] Check for reverted transactions
+[ ] Monitor for any errors
+[ ] User feedback channels checked
+[ ] No critical issues reported
+[ ] All transactions completing successfully
+
+First Day Checks:
+[ ] Total staked amount: ______________
+[ ] Number of stakers: ______________
+[ ] Referral bonuses claimed: ______________
+[ ] Contract balance remaining: ______________
+[ ] Average gas cost: ______________
+[ ] Any issues reported: ______________
+
+First Week Checks:
+[ ] Day 3: Contract balance check
+[ ] Day 7: Full metrics review
+[ ] Total staked (1 week): ______________
+[ ] Unique stakers (1 week): ______________
+[ ] Referrals (1 week): ______________
+[ ] Issues encountered: ______________
+[ ] User satisfaction: HIGH / MEDIUM / LOW
+
+Contract Balance Management:
+[ ] Initial funding: ______________ 1DREAM
+[ ] Current balance: ______________ 1DREAM
+[ ] Estimated burn rate: ______________ per week
+[ ] Next refill date: ______________
+[ ] Refill amount needed: ______________
+
+═══════════════════════════════════════════════════════════════════════════════
+
+📢 PHASE 6: USER COMMUNICATION
+
+Pre-Launch:
+[ ] Prepare announcement post
+[ ] Create user guide / FAQ
+[ ] Update documentation website
+[ ] Notify community moderators
+[ ] Prepare support team
+
+Launch Announcement:
+[ ] Announce on Twitter/X
+[ ] Post in Telegram group
+[ ] Update Discord server
+[ ] Email to users (if applicable)
+[ ] Update website homepage
+[ ] Blog post published
+
+User Support:
+[ ] Monitor support channels
+[ ] Respond to user questions
+[ ] Track common issues
+[ ] Create FAQ for common questions
+[ ] Update documentation as needed
+
+═══════════════════════════════════════════════════════════════════════════════
+
+🔥 EMERGENCY PROCEDURES
+
+Emergency Contacts:
+Primary: _________________________________
+Secondary: _________________________________
+Developer: _________________________________
+
+If Critical Bug Found:
+[ ] Immediately assess severity
+[ ] If severe: Set all plans to inactive
+[ ] Announce issue to users transparently
+[ ] Allow users to unstake
+[ ] Investigate root cause
+[ ] Deploy fix or roll back
+[ ] Communicate resolution
+
+If Contract Balance Low:
+[ ] Calculate estimated needs
+[ ] Add 10-15% extra for taxes
+[ ] Prepare transfer transaction
+[ ] Fund contract address
+[ ] Verify balance updated
+[ ] Monitor for next week
+
+If Exploit Detected:
+[ ] IMMEDIATE: Pause all operations if possible
+[ ] Contact security team
+[ ] Use withdrawFunds() to secure remaining tokens
+[ ] Assess damage
+[ ] Communicate with users
+[ ] Plan remediation
+
+═══════════════════════════════════════════════════════════════════════════════
+
+✅ FINAL SIGN-OFF
+
+Deployment Completed By: _________________________________
+
+Date: _________________________________
+
+Time: _________________________________
+
+Total Deployment Duration: ________ hours
+
+Contract Addresses:
+  Testnet: _________________________________
+  Mainnet: _________________________________
+
+Initial Metrics:
+  Total Funded: ______________ 1DREAM
+  Commission Rate: ______%
+  Active Plans: ______
+  Gas Used: ______ BNB
+
+Status:
+  [ ] ✅ Fully Successful
+  [ ] ⚠️ Successful with Minor Issues
+  [ ] ❌ Failed - Need Rollback
+
+Notes:
+_______________________________________________________________________
+_______________________________________________________________________
+_______________________________________________________________________
+_______________________________________________________________________
+
+Next Review Date: _________________________________
+
+═══════════════════════════════════════════════════════════════════════════════
+
+                            DEPLOYMENT COMPLETE! 🎉
+
+═══════════════════════════════════════════════════════════════════════════════
