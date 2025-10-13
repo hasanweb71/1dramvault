@@ -11,6 +11,15 @@
   {
     "anonymous": false,
     "inputs": [
+      { "indexed": true, "internalType": "address", "name": "user", "type": "address" },
+      { "indexed": false, "internalType": "uint256", "name": "bonusAmount", "type": "uint256" }
+    ],
+    "name": "ClosingBonusClaimed",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
       { "indexed": true, "internalType": "address", "name": "owner", "type": "address" },
       { "indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256" }
     ],
@@ -35,7 +44,8 @@
       { "indexed": false, "internalType": "uint256", "name": "maxAmount", "type": "uint256" },
       { "indexed": false, "internalType": "uint256", "name": "dailyRate", "type": "uint256" },
       { "indexed": false, "internalType": "uint256", "name": "baseDuration", "type": "uint256" },
-      { "indexed": false, "internalType": "uint256", "name": "referralBonus", "type": "uint256" }
+      { "indexed": false, "internalType": "uint256", "name": "referralBonus", "type": "uint256" },
+      { "indexed": false, "internalType": "uint256", "name": "closingBonus", "type": "uint256" }
     ],
     "name": "PackageCreated",
     "type": "event"
@@ -143,6 +153,13 @@
   },
   {
     "inputs": [],
+    "name": "claimClosingBonus",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "claimRestakeBonus",
     "outputs": [],
     "stateMutability": "nonpayable",
@@ -169,7 +186,8 @@
       { "internalType": "uint256", "name": "_maxAmount", "type": "uint256" },
       { "internalType": "uint256", "name": "_dailyRateBasisPoints", "type": "uint256" },
       { "internalType": "uint256", "name": "_baseDurationDays", "type": "uint256" },
-      { "internalType": "uint256", "name": "_referralBonusDays", "type": "uint256" }
+      { "internalType": "uint256", "name": "_referralBonusDays", "type": "uint256" },
+      { "internalType": "uint256", "name": "_closingBonusBasisPoints", "type": "uint256" }
     ],
     "name": "createPackage",
     "outputs": [],
@@ -189,6 +207,7 @@
           { "internalType": "uint256", "name": "dailyRateBasisPoints", "type": "uint256" },
           { "internalType": "uint256", "name": "baseDurationDays", "type": "uint256" },
           { "internalType": "uint256", "name": "referralBonusDays", "type": "uint256" },
+          { "internalType": "uint256", "name": "closingBonusBasisPoints", "type": "uint256" },
           { "internalType": "bool", "name": "active", "type": "bool" }
         ],
         "internalType": "struct OneDreamVaultStaking.StakingPackage[]",
@@ -238,6 +257,7 @@
       { "internalType": "uint256", "name": "dailyRateBasisPoints", "type": "uint256" },
       { "internalType": "uint256", "name": "baseDurationDays", "type": "uint256" },
       { "internalType": "uint256", "name": "referralBonusDays", "type": "uint256" },
+      { "internalType": "uint256", "name": "closingBonusBasisPoints", "type": "uint256" },
       { "internalType": "bool", "name": "active", "type": "bool" }
     ],
     "stateMutability": "view",
@@ -269,20 +289,38 @@
   },
   {
     "inputs": [{ "internalType": "address", "name": "_user", "type": "address" }],
-    "name": "getUserStake",
+    "name": "getUserStakeBasic",
     "outputs": [
       { "internalType": "uint256", "name": "packageId", "type": "uint256" },
       { "internalType": "uint256", "name": "usdtAmount", "type": "uint256" },
       { "internalType": "uint256", "name": "startTime", "type": "uint256" },
       { "internalType": "uint256", "name": "lastClaimTime", "type": "uint256" },
-      { "internalType": "uint256", "name": "baseDurationDays", "type": "uint256" },
-      { "internalType": "uint256", "name": "referralCount", "type": "uint256" },
-      { "internalType": "uint256", "name": "totalDurationDays", "type": "uint256" },
-      { "internalType": "uint256", "name": "restakeCount", "type": "uint256" },
+      { "internalType": "bool", "name": "isActive", "type": "bool" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "address", "name": "_user", "type": "address" }],
+    "name": "getUserStakeBonus",
+    "outputs": [
       { "internalType": "uint256", "name": "restakeBonus", "type": "uint256" },
       { "internalType": "bool", "name": "restakeBonusClaimed", "type": "bool" },
-      { "internalType": "address", "name": "referrer", "type": "address" },
-      { "internalType": "bool", "name": "isActive", "type": "bool" }
+      { "internalType": "uint256", "name": "closingBonus", "type": "uint256" },
+      { "internalType": "bool", "name": "closingBonusClaimed", "type": "bool" },
+      { "internalType": "address", "name": "referrer", "type": "address" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "address", "name": "_user", "type": "address" }],
+    "name": "getUserStakeDuration",
+    "outputs": [
+      { "internalType": "uint256", "name": "baseDurationDays", "type": "uint256" },
+      { "internalType": "uint256", "name": "totalDurationDays", "type": "uint256" },
+      { "internalType": "uint256", "name": "referralCount", "type": "uint256" },
+      { "internalType": "uint256", "name": "restakeCount", "type": "uint256" }
     ],
     "stateMutability": "view",
     "type": "function"
@@ -326,6 +364,7 @@
       { "internalType": "uint256", "name": "dailyRateBasisPoints", "type": "uint256" },
       { "internalType": "uint256", "name": "baseDurationDays", "type": "uint256" },
       { "internalType": "uint256", "name": "referralBonusDays", "type": "uint256" },
+      { "internalType": "uint256", "name": "closingBonusBasisPoints", "type": "uint256" },
       { "internalType": "bool", "name": "active", "type": "bool" }
     ],
     "stateMutability": "view",
@@ -377,15 +416,15 @@
     "type": "function"
   },
   {
-    "inputs": [{ "internalType": "address", "name": "", "type": "address" }],
-    "name": "totalReferrals",
+    "inputs": [],
+    "name": "totalRewardsPaid",
     "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
     "stateMutability": "view",
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "totalRewardsPaid",
+    "inputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "name": "totalReferrals",
     "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
     "stateMutability": "view",
     "type": "function"
@@ -420,6 +459,7 @@
       { "internalType": "uint256", "name": "_dailyRateBasisPoints", "type": "uint256" },
       { "internalType": "uint256", "name": "_baseDurationDays", "type": "uint256" },
       { "internalType": "uint256", "name": "_referralBonusDays", "type": "uint256" },
+      { "internalType": "uint256", "name": "_closingBonusBasisPoints", "type": "uint256" },
       { "internalType": "bool", "name": "_active", "type": "bool" }
     ],
     "name": "updatePackage",
@@ -432,6 +472,13 @@
     "name": "updatePancakeSwapPair",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "usdtToken",
+    "outputs": [{ "internalType": "contract IERC20", "name": "", "type": "address" }],
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -448,15 +495,10 @@
       { "internalType": "uint256", "name": "restakeCount", "type": "uint256" },
       { "internalType": "uint256", "name": "restakeBonus", "type": "uint256" },
       { "internalType": "bool", "name": "restakeBonusClaimed", "type": "bool" },
+      { "internalType": "uint256", "name": "closingBonus", "type": "uint256" },
+      { "internalType": "bool", "name": "closingBonusClaimed", "type": "bool" },
       { "internalType": "address", "name": "referrer", "type": "address" }
     ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "usdtToken",
-    "outputs": [{ "internalType": "contract IERC20", "name": "", "type": "address" }],
     "stateMutability": "view",
     "type": "function"
   },
