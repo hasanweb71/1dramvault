@@ -1,27 +1,29 @@
 import React from 'react';
 import { TrendingUp, Users, Shield, Zap, ExternalLink, Copy, Check } from 'lucide-react';
+import { useTokenStats } from '../hooks/useTokenStats';
 
 export default function Home() {
   const [copiedCA, setCopiedCA] = React.useState(false);
+  const tokenStatsData = useTokenStats();
 
   const tokenStats = [
     {
       label: 'Max Supply',
-      value: '888,888',
+      value: tokenStatsData.maxSupply,
       detail: 'Total tokens ever created',
       icon: TrendingUp,
       color: 'from-blue-500 to-blue-600'
     },
     {
       label: 'Burned',
-      value: '44,444',
+      value: tokenStatsData.burned,
       detail: 'Tokens permanently removed',
       icon: Zap,
       color: 'from-red-500 to-red-600'
     },
     {
       label: 'Circulating',
-      value: '844,444',
+      value: tokenStatsData.circulating,
       detail: 'Tokens in active circulation',
       icon: Users,
       color: 'from-green-500 to-green-600'
@@ -77,7 +79,11 @@ export default function Home() {
                     </div>
                     <h3 className="text-lg font-bold text-white dark:text-white light:text-gray-900 mb-1">{stat.label}</h3>
                     <p className="text-2xl font-bold text-blue-600 mb-2">
-                      {stat.value}
+                      {tokenStatsData.loading ? (
+                        <span className="animate-pulse">Loading...</span>
+                      ) : (
+                        stat.value
+                      )}
                     </p>
                     <p className="text-sm text-slate-400 dark:text-slate-400 light:text-gray-600">{stat.detail}</p>
                   </div>
