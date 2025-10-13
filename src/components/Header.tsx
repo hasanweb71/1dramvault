@@ -1,5 +1,5 @@
 import React from 'react';
-import { Wallet, Menu, X, Info } from 'lucide-react';
+import { Wallet, Menu, X, Info, FileText } from 'lucide-react';
 
 type ActiveView = 'home' | 'trade' | 'dapps' | 'roadmap' | 'defi';
 
@@ -101,6 +101,17 @@ export default function Header({
 
           {/* Theme Switcher, Wallet Connection & Mobile Menu */}
           <div className="flex items-center space-x-3">
+            {/* Whitepaper Link */}
+            <a
+              href="https://1dreamtoken.com/white-paper.pdf"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden md:flex items-center space-x-2 px-4 py-2 rounded-xl bg-slate-700/50 hover:bg-slate-700 text-slate-300 hover:text-white transition-all duration-300 group"
+            >
+              <FileText className="w-4 h-4 group-hover:text-blue-400 transition-colors" />
+              <span className="text-sm font-medium">Whitepaper</span>
+            </a>
+
             {/* Wallet Button */}
             {isWalletConnected ? (
               <div className="flex items-center space-x-2">
@@ -160,6 +171,18 @@ export default function Header({
                   <span>{item.label}{item.tooltip && <span className="text-xs ml-2 opacity-75">({item.tooltip})</span>}</span>
                 </button>
               ))}
+
+              {/* Whitepaper Link for Mobile */}
+              <a
+                href="https://1dreamtoken.com/white-paper.pdf"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-3 rounded-xl font-medium text-sm transition-all duration-300 text-left flex items-center space-x-2 text-slate-300 hover:text-white hover:bg-slate-700/50"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <FileText className="w-4 h-4" />
+                <span>Whitepaper</span>
+              </a>
             </nav>
           </div>
         )}

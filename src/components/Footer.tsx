@@ -13,7 +13,7 @@ export default function Footer() {
   ];
 
   const quickLinks = [
-    { name: 'Whitepaper', href: '#' },
+    { name: 'Whitepaper', href: 'https://1dreamtoken.com/white-paper.pdf' },
     { name: 'Audit Report', href: '#' },
     { name: 'Documentation', href: '#' },
     { name: 'Terms of Service', href: '#' },
@@ -86,6 +86,8 @@ export default function Footer() {
                 <li key={link.name}>
                   <a
                     href={link.href}
+                    target={link.href.startsWith('http') ? '_blank' : undefined}
+                    rel={link.href.startsWith('http') ? 'noopener noreferrer' : undefined}
                     className="text-gray-300 hover:text-white transition-colors duration-200 flex items-center group"
                   >
                     <span>{link.name}</span>

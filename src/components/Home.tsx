@@ -197,6 +197,15 @@ export default function Home() {
                 <h4 className="text-white dark:text-white light:text-gray-900 font-semibold mb-3">Quick Links</h4>
                 <div className="space-y-2">
                   <a
+                    href="https://1dreamtoken.com/white-paper.pdf"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between p-2 rounded-lg bg-slate-700/30 hover:bg-slate-700/50 transition-colors"
+                  >
+                    <span className="text-slate-300 text-sm">Whitepaper</span>
+                    <ExternalLink className="w-4 h-4 text-blue-400" />
+                  </a>
+                  <a
                     href="https://pancakeswap.finance/swap?outputCurrency=0x0C98F3e79061E0dB9569cd2574d8aac0d5023965"
                     target="_blank"
                     rel="noopener noreferrer"
