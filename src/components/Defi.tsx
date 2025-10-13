@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Lock, Users, TrendingUp, Award, Gift, DollarSign, Calendar, Percent, UserPlus, Star, CheckCircle2, Sparkles, Copy, Link2, Check } from 'lucide-react';
+import { useVaultStaking } from '../hooks/useVaultStaking';
+import { ethers } from 'ethers';
 
 interface DefiProps {
   isWalletConnected: boolean;
@@ -9,10 +11,42 @@ interface DefiProps {
 
 export default function Defi({ isWalletConnected, walletAddress, onWalletConnect }: DefiProps) {
   const [stakeAmount, setStakeAmount] = useState('');
-  const [selectedRank, setSelectedRank] = useState<string | null>(null);
+  const [selectedRank, setSelectedRank] = useState<number | null>(null);
   const [referrerAddress, setReferrerAddress] = useState('');
   const [copied, setCopied] = useState(false);
-  const [hasActiveStake, setHasActiveStake] = useState(false); // This will come from contract
+  const [provider, setProvider] = useState<ethers.BrowserProvider | null>(null);
+  const [signer, setSigner] = useState<ethers.Signer | null>(null);
+
+  // Initialize provider and signer
+  React.useEffect(() => {
+    const initProvider = async () => {
+      if (isWalletConnected && window.ethereum) {
+        const browserProvider = new ethers.BrowserProvider(window.ethereum);
+        const browserSigner = await browserProvider.getSigner();
+        setProvider(browserProvider);
+        setSigner(browserSigner);
+      } else {
+        setProvider(null);
+        setSigner(null);
+      }
+    };
+
+    initProvider();
+  }, [isWalletConnected]);
+
+  const {
+    packages,
+    userStake,
+    contractStats,
+    referralStats,
+    pendingRewards,
+    loading,
+    error,
+    stake: stakeToContract,
+    refresh
+  } = useVaultStaking(walletAddress, signer || undefined);
+
+  const hasActiveStake = userStake?.isActive || false;
 
   // Generate referral link
   const referralLink = `${window.location.origin}?ref=${walletAddress}`;
@@ -34,79 +68,93 @@ export default function Defi({ isWalletConnected, walletAddress, onWalletConnect
   }, [walletAddress]);
 
   const stats = [
-    { label: 'Total USDT Stake', value: '0', icon: DollarSign, color: 'from-blue-500 to-blue-600' },
-    { label: 'Total Stakers', value: '0', icon: Users, color: 'from-emerald-500 to-emerald-600' },
+    { label: 'Total USDT Stake', value: contractStats ? `${parseFloat(contractStats.totalUsdtStaked).toLocaleString()} USDT` : '0', icon: DollarSign, color: 'from-blue-500 to-blue-600' },
+    { label: 'Total Stakers', value: contractStats ? contractStats.totalStakers.toString() : '0', icon: Users, color: 'from-emerald-500 to-emerald-600' },
     { label: 'Daily Rewards', value: '1%', icon: TrendingUp, color: 'from-violet-500 to-violet-600' },
-    { label: 'Rewards Paid', value: '0 1Dream', icon: Gift, color: 'from-amber-500 to-amber-600' }
+    { label: 'Rewards Paid', value: contractStats ? `${parseFloat(contractStats.totalRewardsPaid).toFixed(2)} 1Dream` : '0 1Dream', icon: Gift, color: 'from-amber-500 to-amber-600' }
   ];
 
-  const ranks = [
-    {
-      name: 'Bronze',
+  // Package styling map
+  const packageStyles: Record<string, any> = {
+    'Bronze': {
       tier: 'Starter',
-      minStake: '100',
-      maxStake: '500',
-      dailyRate: '1%',
-      duration: '120',
-      referralBonus: '4',
       bgGradient: 'from-amber-900/40 via-amber-800/30 to-amber-900/40',
       borderGradient: 'from-amber-500 via-amber-400 to-amber-600',
       accentColor: 'amber',
-      icon: '🥉',
-      features: ['Daily 1% rewards', '120-day duration', '+4 days per referral', 'Basic support']
+      icon: '🥉'
     },
-    {
-      name: 'Silver',
+    'Silver': {
       tier: 'Growth',
-      minStake: '600',
-      maxStake: '1000',
-      dailyRate: '1%',
-      duration: '120',
-      referralBonus: '8',
       bgGradient: 'from-slate-700/40 via-slate-600/30 to-slate-700/40',
       borderGradient: 'from-slate-400 via-slate-300 to-slate-500',
       accentColor: 'slate',
-      icon: '🥈',
-      features: ['Daily 1% rewards', '120-day duration', '+8 days per referral', 'Priority support']
+      icon: '🥈'
     },
-    {
-      name: 'Gold',
+    'Gold': {
       tier: 'Premium',
-      minStake: '1000',
-      maxStake: '5000',
-      dailyRate: '1%',
-      duration: '120',
-      referralBonus: '12',
       bgGradient: 'from-yellow-900/40 via-yellow-700/30 to-yellow-900/40',
       borderGradient: 'from-yellow-400 via-yellow-300 to-yellow-500',
       accentColor: 'yellow',
       icon: '🥇',
-      features: ['Daily 1% rewards', '120-day duration', '+12 days per referral', 'VIP support'],
       popular: true
     },
-    {
-      name: 'Diamond',
+    'Diamond': {
       tier: 'Elite',
-      minStake: '6000',
-      maxStake: '10000',
-      dailyRate: '1%',
-      duration: '120',
-      referralBonus: '15',
       bgGradient: 'from-cyan-900/40 via-blue-800/30 to-cyan-900/40',
       borderGradient: 'from-cyan-400 via-blue-400 to-cyan-500',
       accentColor: 'cyan',
-      icon: '💎',
-      features: ['Daily 1% rewards', '120-day duration', '+15 days per referral', 'Concierge support']
+      icon: '💎'
     }
-  ];
+  };
 
-  const handleStake = () => {
+  // Map packages from contract to display format
+  const ranks = packages.map(pkg => {
+    const style = packageStyles[pkg.name] || packageStyles['Bronze'];
+    return {
+      id: pkg.id,
+      name: pkg.name,
+      tier: style.tier,
+      minStake: parseFloat(pkg.minAmount).toFixed(0),
+      maxStake: parseFloat(pkg.maxAmount).toFixed(0),
+      dailyRate: pkg.dailyRate,
+      duration: pkg.baseDurationDays.toString(),
+      referralBonus: pkg.referralBonusDays.toString(),
+      closingBonus: pkg.closingBonusRate,
+      bgGradient: style.bgGradient,
+      borderGradient: style.borderGradient,
+      accentColor: style.accentColor,
+      icon: style.icon,
+      popular: style.popular || false,
+      features: [
+        `Daily ${pkg.dailyRate} rewards`,
+        `${pkg.baseDurationDays}-day duration`,
+        `+${pkg.referralBonusDays} days per referral`,
+        `${pkg.closingBonusRate} closing bonus`
+      ]
+    };
+  });
+
+  const handleStake = async () => {
     if (!isWalletConnected) {
       onWalletConnect();
       return;
     }
-    // Functionality will be added later
-    console.log('Stake:', stakeAmount, 'Rank:', selectedRank);
+
+    if (!selectedRank || !stakeAmount) {
+      return;
+    }
+
+    try {
+      const referrer = referrerAddress || ethers.ZeroAddress;
+      await stakeToContract(selectedRank, stakeAmount, referrer);
+      alert('Stake successful!');
+      setStakeAmount('');
+      setSelectedRank(null);
+      await refresh();
+    } catch (err: any) {
+      console.error('Stake error:', err);
+      alert(`Failed to stake: ${err.message}`);
+    }
   };
 
   return (
@@ -144,15 +192,25 @@ export default function Defi({ isWalletConnected, walletAddress, onWalletConnect
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Ranks Grid - 2 columns */}
           <div className="lg:col-span-2">
-            <div className="grid sm:grid-cols-2 gap-6">
-              {ranks.map((rank, index) => (
-                <div
-                  key={index}
-                  onClick={() => setSelectedRank(rank.name)}
-                  className={`relative group cursor-pointer transition-all duration-500 ${
-                    selectedRank === rank.name ? 'scale-[1.02]' : 'hover:scale-[1.02]'
-                  }`}
-                >
+            {loading ? (
+              <div className="text-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto"></div>
+                <p className="text-gray-400 mt-4">Loading packages...</p>
+              </div>
+            ) : ranks.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-gray-400">No staking packages available</p>
+              </div>
+            ) : (
+              <div className="grid sm:grid-cols-2 gap-6">
+                {ranks.map((rank, index) => (
+                  <div
+                    key={rank.id}
+                    onClick={() => setSelectedRank(rank.id)}
+                    className={`relative group cursor-pointer transition-all duration-500 ${
+                      selectedRank === rank.id ? 'scale-[1.02]' : 'hover:scale-[1.02]'
+                    }`}
+                  >
                   {/* Popular Badge */}
                   {rank.popular && (
                     <div className="absolute -top-3 -right-3 z-10">
@@ -163,17 +221,17 @@ export default function Defi({ isWalletConnected, walletAddress, onWalletConnect
                     </div>
                   )}
 
-                  {/* Gradient Border Effect */}
-                  <div className={`absolute inset-0 bg-gradient-to-r ${rank.borderGradient} rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm ${
-                    selectedRank === rank.name ? 'opacity-100' : ''
-                  }`}></div>
+                    {/* Gradient Border Effect */}
+                    <div className={`absolute inset-0 bg-gradient-to-r ${rank.borderGradient} rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm ${
+                      selectedRank === rank.id ? 'opacity-100' : ''
+                    }`}></div>
 
-                  {/* Card Content */}
-                  <div className={`relative bg-gradient-to-br ${rank.bgGradient} backdrop-blur-xl rounded-2xl p-6 border-2 ${
-                    selectedRank === rank.name
-                      ? `border-${rank.accentColor}-400`
-                      : 'border-slate-700/50'
-                  } overflow-hidden`}>
+                    {/* Card Content */}
+                    <div className={`relative bg-gradient-to-br ${rank.bgGradient} backdrop-blur-xl rounded-2xl p-6 border-2 ${
+                      selectedRank === rank.id
+                        ? `border-${rank.accentColor}-400`
+                        : 'border-slate-700/50'
+                    } overflow-hidden`}>
 
                     {/* Background Pattern */}
                     <div className="absolute inset-0 opacity-5">
@@ -185,19 +243,19 @@ export default function Defi({ isWalletConnected, walletAddress, onWalletConnect
 
                     {/* Content */}
                     <div className="relative z-10">
-                      {/* Header */}
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-3">
-                          <div className="text-4xl">{rank.icon}</div>
-                          <div>
-                            <h3 className="text-2xl font-bold text-white leading-tight">{rank.name}</h3>
-                            <p className="text-xs text-slate-300 font-medium">{rank.tier} Plan</p>
+                        {/* Header */}
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <div className="text-4xl">{rank.icon}</div>
+                            <div>
+                              <h3 className="text-2xl font-bold text-white leading-tight">{rank.name}</h3>
+                              <p className="text-xs text-slate-300 font-medium">{rank.tier} Plan</p>
+                            </div>
                           </div>
+                          {selectedRank === rank.id && (
+                            <CheckCircle2 className="w-7 h-7 text-green-400 animate-in zoom-in duration-300" />
+                          )}
                         </div>
-                        {selectedRank === rank.name && (
-                          <CheckCircle2 className="w-7 h-7 text-green-400 animate-in zoom-in duration-300" />
-                        )}
-                      </div>
 
                       {/* Stake Range - Prominent */}
                       <div className="bg-slate-900/50 rounded-xl p-4 mb-4 border border-slate-700/50">
@@ -230,14 +288,23 @@ export default function Defi({ isWalletConnected, walletAddress, onWalletConnect
                         </div>
                       </div>
 
-                      {/* Referral Bonus */}
-                      <div className="bg-gradient-to-r from-blue-500/10 to-violet-500/10 rounded-lg p-3 mb-4 border border-blue-500/20">
-                        <div className="flex items-center gap-2 mb-1">
-                          <UserPlus className="w-4 h-4 text-blue-400" />
-                          <span className="text-xs text-blue-300 font-medium">Referral Bonus</span>
+                        {/* Referral Bonus */}
+                        <div className="bg-gradient-to-r from-blue-500/10 to-violet-500/10 rounded-lg p-3 mb-3 border border-blue-500/20">
+                          <div className="flex items-center gap-2 mb-1">
+                            <UserPlus className="w-4 h-4 text-blue-400" />
+                            <span className="text-xs text-blue-300 font-medium">Referral Bonus</span>
+                          </div>
+                          <p className="text-white text-sm">+{rank.referralBonus} days per referral</p>
                         </div>
-                        <p className="text-white text-sm">+{rank.referralBonus} days per referral</p>
-                      </div>
+
+                        {/* Closing Bonus */}
+                        <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-lg p-3 mb-4 border border-purple-500/20">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Gift className="w-4 h-4 text-purple-400" />
+                            <span className="text-xs text-purple-300 font-medium">Closing Bonus</span>
+                          </div>
+                          <p className="text-white text-sm">{rank.closingBonus} of stake amount</p>
+                        </div>
 
                       {/* Features List */}
                       <div className="space-y-2">
@@ -249,22 +316,23 @@ export default function Defi({ isWalletConnected, walletAddress, onWalletConnect
                         ))}
                       </div>
 
-                      {/* Select Button */}
-                      {selectedRank === rank.name ? (
-                        <div className="mt-4 py-2.5 rounded-lg bg-green-500/20 border border-green-500/50 text-green-400 text-center text-sm font-semibold flex items-center justify-center gap-2">
-                          <CheckCircle2 className="w-4 h-4" />
-                          Selected
-                        </div>
-                      ) : (
-                        <div className={`mt-4 py-2.5 rounded-lg bg-gradient-to-r ${rank.borderGradient} opacity-0 group-hover:opacity-100 transition-opacity text-slate-900 text-center text-sm font-semibold`}>
-                          Select Plan
-                        </div>
-                      )}
+                        {/* Select Button */}
+                        {selectedRank === rank.id ? (
+                          <div className="mt-4 py-2.5 rounded-lg bg-green-500/20 border border-green-500/50 text-green-400 text-center text-sm font-semibold flex items-center justify-center gap-2">
+                            <CheckCircle2 className="w-4 h-4" />
+                            Selected
+                          </div>
+                        ) : (
+                          <div className={`mt-4 py-2.5 rounded-lg bg-gradient-to-r ${rank.borderGradient} opacity-0 group-hover:opacity-100 transition-opacity text-slate-900 text-center text-sm font-semibold`}>
+                            Select Plan
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Stake User Details - Right side */}
@@ -389,7 +457,7 @@ export default function Defi({ isWalletConnected, walletAddress, onWalletConnect
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <Award className="w-5 h-5 text-blue-400" />
-                            <span className="text-white font-semibold">{selectedRank}</span>
+                            <span className="text-white font-semibold">{ranks.find(r => r.id === selectedRank)?.name}</span>
                           </div>
                           <CheckCircle2 className="w-5 h-5 text-green-400" />
                         </div>
@@ -408,21 +476,21 @@ export default function Defi({ isWalletConnected, walletAddress, onWalletConnect
                     <div className="space-y-3">
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-gray-400">Total Staked</span>
-                        <span className="text-white font-semibold">0 USDT</span>
+                        <span className="text-white font-semibold">{userStake ? `${parseFloat(userStake.usdtAmount).toFixed(2)} USDT` : '0 USDT'}</span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-400">Daily Rewards</span>
-                        <span className="text-emerald-400 font-semibold">0 1DREAM</span>
+                        <span className="text-sm text-gray-400">Pending Rewards</span>
+                        <span className="text-emerald-400 font-semibold">{parseFloat(pendingRewards).toFixed(4)} 1DREAM</span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-400">Total Earned</span>
-                        <span className="text-amber-400 font-semibold">0 1DREAM</span>
+                        <span className="text-sm text-gray-400">Closing Bonus</span>
+                        <span className="text-purple-400 font-semibold">{userStake ? `${parseFloat(userStake.closingBonus).toFixed(4)} 1DREAM` : '0 1DREAM'}</span>
                       </div>
                       <div className="flex justify-between items-center pt-2 border-t border-slate-700/50">
                         <span className="text-sm text-gray-400">Referrals</span>
                         <span className="text-blue-400 font-semibold flex items-center gap-1">
                           <Users className="w-3.5 h-3.5" />
-                          0
+                          {referralStats?.totalReferralCount || 0}
                         </span>
                       </div>
                     </div>
