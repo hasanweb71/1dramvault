@@ -53,6 +53,7 @@ contract OneDreamVaultStaking {
         uint256 dailyRateBasisPoints; // Daily reward rate in basis points (1% = 100)
         uint256 baseDurationDays; // Base duration in days
         uint256 referralBonusDays; // Days added per successful referral
+        uint256 closingBonusBasisPoints; // Closing bonus in basis points (% of USDT stake)
         bool active;
     }
 
@@ -68,6 +69,8 @@ contract OneDreamVaultStaking {
         uint256 restakeCount; // Number of times this wallet has re-staked
         uint256 restakeBonus; // 8% bonus accumulated, claimable after period ends
         bool restakeBonusClaimed; // Whether re-stake bonus has been claimed
+        uint256 closingBonus; // Closing bonus accumulated based on package
+        bool closingBonusClaimed; // Whether closing bonus has been claimed
         address referrer; // Who referred this user
     }
 
@@ -87,11 +90,12 @@ contract OneDreamVaultStaking {
     // ==================== EVENTS ====================
 
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
-    event PackageCreated(uint256 indexed packageId, string name, uint256 minAmount, uint256 maxAmount, uint256 dailyRate, uint256 baseDuration, uint256 referralBonus);
+    event PackageCreated(uint256 indexed packageId, string name, uint256 minAmount, uint256 maxAmount, uint256 dailyRate, uint256 baseDuration, uint256 referralBonus, uint256 closingBonus);
     event PackageUpdated(uint256 indexed packageId, bool active);
     event Staked(address indexed user, uint256 indexed packageId, uint256 usdtAmount, address indexed referrer);
     event RewardsClaimed(address indexed user, uint256 oneDreamAmount);
     event RestakeBonusClaimed(address indexed user, uint256 bonusAmount);
+    event ClosingBonusClaimed(address indexed user, uint256 bonusAmount);
     event ReferralAdded(address indexed referrer, address indexed referee, uint256 bonusDays);
     event UsdtWithdrawn(address indexed owner, uint256 amount);
     event OneDreamWithdrawn(address indexed owner, uint256 amount);
@@ -146,11 +150,13 @@ contract OneDreamVaultStaking {
         uint256 _maxAmount,
         uint256 _dailyRateBasisPoints,
         uint256 _baseDurationDays,
-        uint256 _referralBonusDays
+        uint256 _referralBonusDays,
+        uint256 _closingBonusBasisPoints
     ) external onlyOwner {
         require(_minAmount > 0 && _maxAmount >= _minAmount, "Invalid amount range");
         require(_dailyRateBasisPoints > 0 && _dailyRateBasisPoints <= 1000, "Invalid daily rate"); // Max 10% daily
         require(_baseDurationDays > 0, "Duration must be positive");
+        require(_closingBonusBasisPoints <= 2000, "Closing bonus too high"); // Max 20%
 
         uint256 packageId = nextPackageId++;
 
@@ -162,10 +168,11 @@ contract OneDreamVaultStaking {
             dailyRateBasisPoints: _dailyRateBasisPoints,
             baseDurationDays: _baseDurationDays,
             referralBonusDays: _referralBonusDays,
+            closingBonusBasisPoints: _closingBonusBasisPoints,
             active: true
         });
 
-        emit PackageCreated(packageId, _name, _minAmount, _maxAmount, _dailyRateBasisPoints, _baseDurationDays, _referralBonusDays);
+        emit PackageCreated(packageId, _name, _minAmount, _maxAmount, _dailyRateBasisPoints, _baseDurationDays, _referralBonusDays, _closingBonusBasisPoints);
     }
 
     /**
@@ -179,12 +186,14 @@ contract OneDreamVaultStaking {
         uint256 _dailyRateBasisPoints,
         uint256 _baseDurationDays,
         uint256 _referralBonusDays,
+        uint256 _closingBonusBasisPoints,
         bool _active
     ) external onlyOwner {
         require(packages[_packageId].id == _packageId, "Package does not exist");
         require(_minAmount > 0 && _maxAmount >= _minAmount, "Invalid amount range");
         require(_dailyRateBasisPoints > 0 && _dailyRateBasisPoints <= 1000, "Invalid daily rate");
         require(_baseDurationDays > 0, "Duration must be positive");
+        require(_closingBonusBasisPoints <= 2000, "Closing bonus too high"); // Max 20%
 
         StakingPackage storage pkg = packages[_packageId];
         pkg.name = _name;
@@ -193,6 +202,7 @@ contract OneDreamVaultStaking {
         pkg.dailyRateBasisPoints = _dailyRateBasisPoints;
         pkg.baseDurationDays = _baseDurationDays;
         pkg.referralBonusDays = _referralBonusDays;
+        pkg.closingBonusBasisPoints = _closingBonusBasisPoints;
         pkg.active = _active;
 
         emit PackageUpdated(_packageId, _active);
@@ -280,6 +290,8 @@ contract OneDreamVaultStaking {
             restakeCount: restakeCount,
             restakeBonus: 0,
             restakeBonusClaimed: false,
+            closingBonus: 0,
+            closingBonusClaimed: false,
             referrer: _referrer
         });
 
@@ -367,6 +379,44 @@ contract OneDreamVaultStaking {
         require(oneDreamToken.transfer(msg.sender, bonusOneDream), "OneDream transfer failed");
 
         emit RestakeBonusClaimed(msg.sender, bonusOneDream);
+    }
+
+    /**
+     * @notice Claim closing bonus (fixed % bonus based on package, claimable after staking period ends)
+     */
+    function claimClosingBonus() external {
+        require(hasActiveStake[msg.sender], "No active stake");
+
+        UserStake storage userStake = userStakes[msg.sender];
+        require(!userStake.closingBonusClaimed, "Closing bonus already claimed");
+
+        // Check if staking period has ended
+        uint256 endTime = userStake.startTime + (userStake.totalDurationDays * 1 days);
+        require(block.timestamp >= endTime, "Staking period not ended");
+
+        // Get package details
+        StakingPackage memory pkg = packages[userStake.packageId];
+        require(pkg.closingBonusBasisPoints > 0, "No closing bonus for this package");
+
+        // Calculate closing bonus in OneDream tokens based on USDT staked
+        uint256 oneDreamPrice = getOneDreamPrice();
+        require(oneDreamPrice > 0, "Invalid price from PancakeSwap");
+
+        // Calculate bonus: (usdtAmount * closingBonusRate) / oneDreamPrice
+        uint256 usdtDecimals = usdtToken.decimals();
+        uint256 oneDreamDecimals = oneDreamToken.decimals();
+
+        uint256 bonusUsdtValue = (userStake.usdtAmount * pkg.closingBonusBasisPoints) / BASIS_POINTS;
+        uint256 bonusOneDream = (bonusUsdtValue * (10 ** oneDreamDecimals)) / oneDreamPrice;
+
+        userStake.closingBonus = bonusOneDream;
+        userStake.closingBonusClaimed = true;
+
+        // Transfer bonus
+        require(oneDreamToken.balanceOf(address(this)) >= bonusOneDream, "Insufficient OneDream in contract");
+        require(oneDreamToken.transfer(msg.sender, bonusOneDream), "OneDream transfer failed");
+
+        emit ClosingBonusClaimed(msg.sender, bonusOneDream);
     }
 
     /**
@@ -497,12 +547,16 @@ contract OneDreamVaultStaking {
     function getUserStakeBonus(address _user) external view returns (
         uint256 restakeBonus,
         bool restakeBonusClaimed,
+        uint256 closingBonus,
+        bool closingBonusClaimed,
         address referrer
     ) {
         UserStake memory userStake = userStakes[_user];
         return (
             userStake.restakeBonus,
             userStake.restakeBonusClaimed,
+            userStake.closingBonus,
+            userStake.closingBonusClaimed,
             userStake.referrer
         );
     }
@@ -518,6 +572,7 @@ contract OneDreamVaultStaking {
         uint256 dailyRateBasisPoints,
         uint256 baseDurationDays,
         uint256 referralBonusDays,
+        uint256 closingBonusBasisPoints,
         bool active
     ) {
         StakingPackage memory pkg = packages[_packageId];
@@ -529,6 +584,7 @@ contract OneDreamVaultStaking {
             pkg.dailyRateBasisPoints,
             pkg.baseDurationDays,
             pkg.referralBonusDays,
+            pkg.closingBonusBasisPoints,
             pkg.active
         );
     }

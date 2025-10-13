@@ -17,6 +17,7 @@ interface PackageFormData {
   dailyRate: string;
   baseDuration: string;
   referralBonus: string;
+  closingBonus: string;
 }
 
 export default function VaultAdminPanel({ isWalletConnected, walletAddress, isOwner, onWalletConnect }: VaultAdminPanelProps) {
@@ -64,7 +65,8 @@ export default function VaultAdminPanel({ isWalletConnected, walletAddress, isOw
     maxAmount: '',
     dailyRate: '1',
     baseDuration: '120',
-    referralBonus: '4'
+    referralBonus: '4',
+    closingBonus: '5'
   });
 
   const resetForm = () => {
@@ -74,7 +76,8 @@ export default function VaultAdminPanel({ isWalletConnected, walletAddress, isOw
       maxAmount: '',
       dailyRate: '1',
       baseDuration: '120',
-      referralBonus: '4'
+      referralBonus: '4',
+      closingBonus: '5'
     });
     setShowAddForm(false);
     setEditingPackage(null);
@@ -96,6 +99,7 @@ export default function VaultAdminPanel({ isWalletConnected, walletAddress, isOw
 
     try {
       const dailyRateBP = Math.floor(parseFloat(formData.dailyRate) * 100);
+      const closingBonusBP = Math.floor(parseFloat(formData.closingBonus) * 100);
 
       if (editingPackage !== null) {
         const pkg = packages.find(p => p.id === editingPackage);
@@ -107,6 +111,7 @@ export default function VaultAdminPanel({ isWalletConnected, walletAddress, isOw
           dailyRateBP,
           parseInt(formData.baseDuration),
           parseInt(formData.referralBonus),
+          closingBonusBP,
           pkg?.active || true
         );
         setSubmitSuccess('Package updated successfully!');
@@ -117,7 +122,8 @@ export default function VaultAdminPanel({ isWalletConnected, walletAddress, isOw
           formData.maxAmount,
           dailyRateBP,
           parseInt(formData.baseDuration),
-          parseInt(formData.referralBonus)
+          parseInt(formData.referralBonus),
+          closingBonusBP
         );
         setSubmitSuccess('Package created successfully!');
       }
@@ -139,7 +145,8 @@ export default function VaultAdminPanel({ isWalletConnected, walletAddress, isOw
       maxAmount: pkg.maxAmount,
       dailyRate: (pkg.dailyRateBasisPoints / 100).toString(),
       baseDuration: pkg.baseDurationDays.toString(),
-      referralBonus: pkg.referralBonusDays.toString()
+      referralBonus: pkg.referralBonusDays.toString(),
+      closingBonus: (pkg.closingBonusBasisPoints / 100).toString()
     });
     setEditingPackage(pkg.id);
     setShowAddForm(true);
@@ -376,6 +383,19 @@ export default function VaultAdminPanel({ isWalletConnected, walletAddress, isOw
                   required
                 />
               </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Closing Bonus (%) *</label>
+                <input
+                  type="number"
+                  step="1"
+                  value={formData.closingBonus}
+                  onChange={(e) => setFormData(prev => ({ ...prev, closingBonus: e.target.value }))}
+                  placeholder="e.g., 5"
+                  className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 text-white rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                />
+              </div>
             </div>
 
             <div className="flex items-center justify-end space-x-4 pt-6 border-t border-slate-700/50">
@@ -467,6 +487,7 @@ export default function VaultAdminPanel({ isWalletConnected, walletAddress, isOw
                   <th className="px-6 py-4 text-left text-sm font-semibold text-slate-300">Daily Rate</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-slate-300">Duration</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-slate-300">Referral Bonus</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-slate-300">Closing Bonus</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-slate-300">Actions</th>
                 </tr>
               </thead>
@@ -487,6 +508,9 @@ export default function VaultAdminPanel({ isWalletConnected, walletAddress, isOw
                     </td>
                     <td className="px-6 py-4">
                       <div className="text-blue-400">+{pkg.referralBonusDays} days</div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-purple-400">{pkg.closingBonusRate}</div>
                     </td>
                     <td className="px-6 py-4">
                       <button

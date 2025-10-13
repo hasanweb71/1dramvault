@@ -15,6 +15,8 @@ interface StakingPackage {
   dailyRate: string;
   baseDurationDays: number;
   referralBonusDays: number;
+  closingBonusBasisPoints: number;
+  closingBonusRate: string;
   active: boolean;
 }
 
@@ -29,6 +31,8 @@ interface UserStake {
   restakeCount: number;
   restakeBonus: string;
   restakeBonusClaimed: boolean;
+  closingBonus: string;
+  closingBonusClaimed: boolean;
   referrer: string;
   isActive: boolean;
 }
@@ -87,6 +91,8 @@ export const useVaultStaking = (walletAddress: string, signer?: ethers.Signer) =
         dailyRate: `${(Number(pkg.dailyRateBasisPoints) / 100).toFixed(2)}%`,
         baseDurationDays: Number(pkg.baseDurationDays),
         referralBonusDays: Number(pkg.referralBonusDays),
+        closingBonusBasisPoints: Number(pkg.closingBonusBasisPoints),
+        closingBonusRate: `${(Number(pkg.closingBonusBasisPoints) / 100).toFixed(0)}%`,
         active: pkg.active
       }));
 
@@ -129,6 +135,8 @@ export const useVaultStaking = (walletAddress: string, signer?: ethers.Signer) =
         restakeCount: Number(duration.restakeCount),
         restakeBonus: ethers.formatUnits(bonus.restakeBonus, 18),
         restakeBonusClaimed: bonus.restakeBonusClaimed,
+        closingBonus: ethers.formatUnits(bonus.closingBonus, 18),
+        closingBonusClaimed: bonus.closingBonusClaimed,
         referrer: bonus.referrer,
         isActive: basic.isActive
       };
@@ -306,6 +314,30 @@ export const useVaultStaking = (walletAddress: string, signer?: ethers.Signer) =
     }
   }, [signer, getContract, fetchUserStake, fetchContractStats]);
 
+  // Claim closing bonus
+  const claimClosingBonus = useCallback(async () => {
+    if (!signer) {
+      throw new Error('Wallet not connected');
+    }
+
+    try {
+      const contract = getContract(true);
+      const tx = await contract.claimClosingBonus();
+      await tx.wait();
+
+      // Refresh data
+      await Promise.all([
+        fetchUserStake(),
+        fetchContractStats()
+      ]);
+
+      return true;
+    } catch (err: any) {
+      console.error('Error claiming closing bonus:', err);
+      throw new Error(err.message || 'Failed to claim closing bonus');
+    }
+  }, [signer, getContract, fetchUserStake, fetchContractStats]);
+
   // Complete stake
   const completeStake = useCallback(async () => {
     if (!signer) {
@@ -334,7 +366,8 @@ export const useVaultStaking = (walletAddress: string, signer?: ethers.Signer) =
     maxAmount: string,
     dailyRateBP: number,
     baseDuration: number,
-    referralBonus: number
+    referralBonus: number,
+    closingBonusBP: number
   ) => {
     if (!signer) {
       throw new Error('Wallet not connected');
@@ -345,7 +378,7 @@ export const useVaultStaking = (walletAddress: string, signer?: ethers.Signer) =
       const minWei = ethers.parseUnits(minAmount, 18);
       const maxWei = ethers.parseUnits(maxAmount, 18);
 
-      const tx = await contract.createPackage(name, minWei, maxWei, dailyRateBP, baseDuration, referralBonus);
+      const tx = await contract.createPackage(name, minWei, maxWei, dailyRateBP, baseDuration, referralBonus, closingBonusBP);
       await tx.wait();
 
       // Refresh packages
@@ -367,6 +400,7 @@ export const useVaultStaking = (walletAddress: string, signer?: ethers.Signer) =
     dailyRateBP: number,
     baseDuration: number,
     referralBonus: number,
+    closingBonusBP: number,
     active: boolean
   ) => {
     if (!signer) {
@@ -378,7 +412,7 @@ export const useVaultStaking = (walletAddress: string, signer?: ethers.Signer) =
       const minWei = ethers.parseUnits(minAmount, 18);
       const maxWei = ethers.parseUnits(maxAmount, 18);
 
-      const tx = await contract.updatePackage(packageId, name, minWei, maxWei, dailyRateBP, baseDuration, referralBonus, active);
+      const tx = await contract.updatePackage(packageId, name, minWei, maxWei, dailyRateBP, baseDuration, referralBonus, closingBonusBP, active);
       await tx.wait();
 
       // Refresh packages
@@ -458,6 +492,7 @@ export const useVaultStaking = (walletAddress: string, signer?: ethers.Signer) =
     stake,
     claimRewards,
     claimRestakeBonus,
+    claimClosingBonus,
     completeStake,
     createPackage,
     updatePackage,
