@@ -16,6 +16,10 @@ export default function Defi({ isWalletConnected, walletAddress, onWalletConnect
   const [copied, setCopied] = useState(false);
   const [provider, setProvider] = useState<ethers.BrowserProvider | null>(null);
   const [signer, setSigner] = useState<ethers.Signer | null>(null);
+  const [showingRewards, setShowingRewards] = useState(false);
+  const [calculatedRewards, setCalculatedRewards] = useState<string>('0');
+  const [loadingRewards, setLoadingRewards] = useState(false);
+  const [claimingRewards, setClaimingRewards] = useState(false);
 
   // Initialize provider and signer
   React.useEffect(() => {
@@ -43,6 +47,9 @@ export default function Defi({ isWalletConnected, walletAddress, onWalletConnect
     loading,
     error,
     stake: stakeToContract,
+    claimRewards,
+    calculateRewardsWithPrice,
+    canClaim,
     refresh
   } = useVaultStaking(walletAddress, signer || undefined);
 
@@ -133,6 +140,51 @@ export default function Defi({ isWalletConnected, walletAddress, onWalletConnect
       ]
     };
   });
+
+  const handleSeeRewards = async () => {
+    if (!isWalletConnected) {
+      onWalletConnect();
+      return;
+    }
+
+    setLoadingRewards(true);
+    try {
+      const rewards = await calculateRewardsWithPrice();
+      setCalculatedRewards(rewards);
+      setShowingRewards(true);
+    } catch (error) {
+      console.error('Error calculating rewards:', error);
+      alert('Failed to calculate rewards. Please try again.');
+    } finally {
+      setLoadingRewards(false);
+    }
+  };
+
+  const handleClaimRewards = async () => {
+    if (!isWalletConnected) {
+      onWalletConnect();
+      return;
+    }
+
+    if (!canClaim()) {
+      alert('You can only claim rewards once every 24 hours.');
+      return;
+    }
+
+    setClaimingRewards(true);
+    try {
+      await claimRewards();
+      alert('Rewards claimed successfully!');
+      setShowingRewards(false);
+      setCalculatedRewards('0');
+      await refresh();
+    } catch (error: any) {
+      console.error('Error claiming rewards:', error);
+      alert(error.message || 'Failed to claim rewards. Please try again.');
+    } finally {
+      setClaimingRewards(false);
+    }
+  };
 
   const handleStake = async () => {
     if (!isWalletConnected) {
@@ -478,9 +530,71 @@ export default function Defi({ isWalletConnected, walletAddress, onWalletConnect
                         <span className="text-sm text-gray-400">Total Staked</span>
                         <span className="text-white font-semibold">{userStake ? `${parseFloat(userStake.usdtAmount).toFixed(2)} USDT` : '0 USDT'}</span>
                       </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-400">Pending Rewards</span>
-                        <span className="text-emerald-400 font-semibold">{parseFloat(pendingRewards).toFixed(4)} 1DREAM</span>
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-400">Pending Rewards</span>
+                          {showingRewards ? (
+                            <span className="text-emerald-400 font-semibold">{calculatedRewards} 1DREAM</span>
+                          ) : (
+                            <span className="text-gray-500 font-semibold text-xs">Click to view</span>
+                          )}
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={handleSeeRewards}
+                            disabled={loadingRewards || !userStake}
+                            className={`flex-1 px-3 py-2 rounded-lg font-medium text-xs transition-all duration-200 ${
+                              loadingRewards
+                                ? 'bg-blue-500/30 text-blue-300 cursor-wait'
+                                : !userStake
+                                ? 'bg-slate-700/50 text-gray-500 cursor-not-allowed'
+                                : 'bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/50 text-blue-400'
+                            }`}
+                          >
+                            {loadingRewards ? (
+                              <span className="flex items-center justify-center gap-1">
+                                <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                </svg>
+                                Loading...
+                              </span>
+                            ) : (
+                              'See Rewards'
+                            )}
+                          </button>
+                          {showingRewards && (
+                            <button
+                              onClick={handleClaimRewards}
+                              disabled={claimingRewards || !canClaim()}
+                              className={`flex-1 px-3 py-2 rounded-lg font-medium text-xs transition-all duration-200 ${
+                                claimingRewards
+                                  ? 'bg-emerald-500/30 text-emerald-300 cursor-wait'
+                                  : !canClaim()
+                                  ? 'bg-slate-700/50 text-gray-500 cursor-not-allowed'
+                                  : 'bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-400'
+                              }`}
+                              title={!canClaim() ? 'You can claim rewards once every 24 hours' : 'Claim your rewards'}
+                            >
+                              {claimingRewards ? (
+                                <span className="flex items-center justify-center gap-1">
+                                  <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                  </svg>
+                                  Claiming...
+                                </span>
+                              ) : (
+                                'Claim'
+                              )}
+                            </button>
+                          )}
+                        </div>
+                        {showingRewards && !canClaim() && (
+                          <p className="text-xs text-amber-400/80 mt-1">
+                            You can claim rewards every 24 hours
+                          </p>
+                        )}
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-gray-400">Closing Bonus</span>

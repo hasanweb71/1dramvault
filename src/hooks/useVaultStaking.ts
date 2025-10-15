@@ -210,6 +210,36 @@ export const useVaultStaking = (walletAddress: string, signer?: ethers.Signer) =
     }
   }, [walletAddress, getContract]);
 
+  // Calculate rewards based on current price and duration
+  const calculateRewardsWithPrice = useCallback(async () => {
+    if (!walletAddress || !userStake) return '0';
+
+    try {
+      const contract = getContract();
+
+      // Get current price
+      const stats = await retryWithBackoff(() => contract.getContractStats());
+      const currentPrice = parseFloat(ethers.formatUnits(stats.currentOneDreamPrice, 18));
+
+      // Get pending rewards in 1DREAM
+      const rewards = await retryWithBackoff(() => contract.calculatePendingRewards(walletAddress));
+      const rewardsIn1Dream = parseFloat(ethers.formatUnits(rewards, 18));
+
+      return rewardsIn1Dream.toFixed(4);
+    } catch (err) {
+      console.error('Error calculating rewards with price:', err);
+      return '0';
+    }
+  }, [walletAddress, userStake, getContract]);
+
+  // Check if user can claim (24 hours since last claim)
+  const canClaim = useCallback(() => {
+    if (!userStake) return false;
+    const now = Math.floor(Date.now() / 1000);
+    const timeSinceLastClaim = now - userStake.lastClaimTime;
+    return timeSinceLastClaim >= 86400; // 24 hours in seconds
+  }, [userStake]);
+
   // Check if user is owner
   const checkIsOwner = useCallback(async () => {
     if (!walletAddress) return false;
@@ -497,6 +527,8 @@ export const useVaultStaking = (walletAddress: string, signer?: ethers.Signer) =
     createPackage,
     updatePackage,
     withdrawUsdt,
-    refresh
+    refresh,
+    calculateRewardsWithPrice,
+    canClaim
   };
 };
