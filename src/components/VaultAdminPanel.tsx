@@ -123,7 +123,7 @@ export default function VaultAdminPanel({ isWalletConnected, walletAddress, isOw
           dailyRateBP,
           parseInt(formData.baseDuration),
           parseInt(formData.referralBonus),
-          closingBonusBP
+          restakingBonusBP
         );
         setSubmitSuccess('Package created successfully!');
       }
