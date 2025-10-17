@@ -17,7 +17,7 @@ interface PackageFormData {
   dailyRate: string;
   baseDuration: string;
   referralBonus: string;
-  closingBonus: string;
+  restakingBonus: string;
 }
 
 export default function VaultAdminPanel({ isWalletConnected, walletAddress, isOwner, onWalletConnect }: VaultAdminPanelProps) {
@@ -66,7 +66,7 @@ export default function VaultAdminPanel({ isWalletConnected, walletAddress, isOw
     dailyRate: '1',
     baseDuration: '120',
     referralBonus: '4',
-    closingBonus: '5'
+    restakingBonus: '5'
   });
 
   const resetForm = () => {
@@ -77,7 +77,7 @@ export default function VaultAdminPanel({ isWalletConnected, walletAddress, isOw
       dailyRate: '1',
       baseDuration: '120',
       referralBonus: '4',
-      closingBonus: '5'
+      restakingBonus: '5'
     });
     setShowAddForm(false);
     setEditingPackage(null);
@@ -99,7 +99,7 @@ export default function VaultAdminPanel({ isWalletConnected, walletAddress, isOw
 
     try {
       const dailyRateBP = Math.floor(parseFloat(formData.dailyRate) * 100);
-      const closingBonusBP = Math.floor(parseFloat(formData.closingBonus) * 100);
+      const restakingBonusBP = Math.floor(parseFloat(formData.restakingBonus) * 100);
 
       if (editingPackage !== null) {
         const pkg = packages.find(p => p.id === editingPackage);
@@ -111,7 +111,7 @@ export default function VaultAdminPanel({ isWalletConnected, walletAddress, isOw
           dailyRateBP,
           parseInt(formData.baseDuration),
           parseInt(formData.referralBonus),
-          closingBonusBP,
+          restakingBonusBP,
           pkg?.active || true
         );
         setSubmitSuccess('Package updated successfully!');
@@ -146,7 +146,7 @@ export default function VaultAdminPanel({ isWalletConnected, walletAddress, isOw
       dailyRate: (pkg.dailyRateBasisPoints / 100).toString(),
       baseDuration: pkg.baseDurationDays.toString(),
       referralBonus: pkg.referralBonusDays.toString(),
-      closingBonus: (pkg.closingBonusBasisPoints / 100).toString()
+      restakingBonus: (pkg.restakingBonusBasisPoints / 100).toString()
     });
     setEditingPackage(pkg.id);
     setShowAddForm(true);
@@ -385,12 +385,12 @@ export default function VaultAdminPanel({ isWalletConnected, walletAddress, isOw
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Closing Bonus (%) *</label>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Re-staking Bonus (%) *</label>
                 <input
                   type="number"
                   step="1"
-                  value={formData.closingBonus}
-                  onChange={(e) => setFormData(prev => ({ ...prev, closingBonus: e.target.value }))}
+                  value={formData.restakingBonus}
+                  onChange={(e) => setFormData(prev => ({ ...prev, restakingBonus: e.target.value }))}
                   placeholder="e.g., 5"
                   className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 text-white rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   required
@@ -487,7 +487,7 @@ export default function VaultAdminPanel({ isWalletConnected, walletAddress, isOw
                   <th className="px-6 py-4 text-left text-sm font-semibold text-slate-300">Daily Rate</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-slate-300">Duration</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-slate-300">Referral Bonus</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-slate-300">Closing Bonus</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-slate-300">Re-staking Bonus</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-slate-300">Actions</th>
                 </tr>
               </thead>
@@ -510,7 +510,7 @@ export default function VaultAdminPanel({ isWalletConnected, walletAddress, isOw
                       <div className="text-blue-400">+{pkg.referralBonusDays} days</div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="text-purple-400">{pkg.closingBonusRate}</div>
+                      <div className="text-purple-400">{pkg.restakingBonusRate}</div>
                     </td>
                     <td className="px-6 py-4">
                       <button

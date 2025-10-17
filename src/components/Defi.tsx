@@ -126,7 +126,7 @@ export default function Defi({ isWalletConnected, walletAddress, onWalletConnect
       dailyRate: pkg.dailyRate,
       duration: pkg.baseDurationDays.toString(),
       referralBonus: pkg.referralBonusDays.toString(),
-      closingBonus: pkg.closingBonusRate,
+      restakingBonus: pkg.restakingBonusRate,
       bgGradient: style.bgGradient,
       borderGradient: style.borderGradient,
       accentColor: style.accentColor,
@@ -136,7 +136,7 @@ export default function Defi({ isWalletConnected, walletAddress, onWalletConnect
         `Daily ${pkg.dailyRate} rewards`,
         `${pkg.baseDurationDays}-day duration`,
         `+${pkg.referralBonusDays} days per referral`,
-        `${pkg.closingBonusRate} closing bonus`
+        `${pkg.restakingBonusRate} re-staking bonus`
       ]
     };
   });
@@ -349,13 +349,13 @@ export default function Defi({ isWalletConnected, walletAddress, onWalletConnect
                           <p className="text-white text-sm">+{rank.referralBonus} days per referral</p>
                         </div>
 
-                        {/* Closing Bonus */}
+                        {/* Re-staking Bonus */}
                         <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-lg p-3 mb-4 border border-purple-500/20">
                           <div className="flex items-center gap-2 mb-1">
                             <Gift className="w-4 h-4 text-purple-400" />
-                            <span className="text-xs text-purple-300 font-medium">Closing Bonus</span>
+                            <span className="text-xs text-purple-300 font-medium">Re-staking Bonus</span>
                           </div>
-                          <p className="text-white text-sm">{rank.closingBonus} of stake amount</p>
+                          <p className="text-white text-sm">{rank.restakingBonus} of stake amount</p>
                         </div>
 
                       {/* Features List */}
@@ -597,8 +597,27 @@ export default function Defi({ isWalletConnected, walletAddress, onWalletConnect
                         )}
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-400">Closing Bonus</span>
-                        <span className="text-purple-400 font-semibold">{userStake ? `${parseFloat(userStake.closingBonus).toFixed(4)} 1DREAM` : '0 1DREAM'}</span>
+                        <span className="text-sm text-gray-400">Rank/Package</span>
+                        <span className="text-blue-400 font-semibold">{userStake ? userStake.packageName : 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-400">Duration</span>
+                        <span className="text-purple-400 font-semibold">
+                          {userStake ? (
+                            <span>
+                              {userStake.baseDurationDays} days
+                              {userStake.referralCount > 0 && (
+                                <span className="text-green-400 text-xs ml-1">
+                                  (+{userStake.totalDurationDays - userStake.baseDurationDays} bonus)
+                                </span>
+                              )}
+                            </span>
+                          ) : 'N/A'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-400">Re-staking Bonus</span>
+                        <span className="text-amber-400 font-semibold">{userStake ? `${parseFloat(userStake.restakeBonus).toFixed(4)} 1DREAM` : '0 1DREAM'}</span>
                       </div>
                       <div className="flex justify-between items-center pt-2 border-t border-slate-700/50">
                         <span className="text-sm text-gray-400">Referrals</span>
