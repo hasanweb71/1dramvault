@@ -17,6 +17,10 @@ interface IPancakeSwapV2Pair {
     function token1() external view returns (address);
 }
 
+interface IPancakeSwapV2Factory {
+    function getPair(address tokenA, address tokenB) external view returns (address pair);
+}
+
 /**
  * @title OneDreamVaultStaking
  * @notice USDT staking vault that rewards users with 1Dream tokens based on PancakeSwap price
@@ -35,9 +39,12 @@ contract OneDreamVaultStaking {
     address public owner;
     IERC20 public usdtToken;
     IERC20 public oneDreamToken;
-    IPancakeSwapV2Pair public pancakeSwapPair; // 1Dream/USDT pair
+    IPancakeSwapV2Pair public pancakeSwapPair; // 1Dream/WBNB pair
+    IPancakeSwapV2Pair public wbnbUsdtPair; // WBNB/USDT pair for price routing
+    address public constant WBNB = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c; // WBNB on BSC
 
-    bool public token0IsOneDream; // true if token0 is 1Dream, false if token1 is 1Dream
+    bool public token0IsOneDream; // true if token0 is 1Dream in 1Dream/WBNB pair
+    bool public wbnbIsToken0InUsdtPair; // true if WBNB is token0 in WBNB/USDT pair
 
     uint256 public constant BASIS_POINTS = 10000; // 100% = 10000
     uint256 public constant RESTAKE_BONUS_BP = 800; // 8% = 800 basis points
@@ -110,19 +117,25 @@ contract OneDreamVaultStaking {
     constructor(
         address _usdtToken,
         address _oneDreamToken,
-        address _pancakeSwapPair
+        address _pancakeSwapPair,
+        address _wbnbUsdtPair
     ) {
         require(_usdtToken != address(0), "Invalid USDT address");
         require(_oneDreamToken != address(0), "Invalid OneDream address");
         require(_pancakeSwapPair != address(0), "Invalid PancakeSwap pair address");
+        require(_wbnbUsdtPair != address(0), "Invalid WBNB/USDT pair address");
 
         owner = msg.sender;
         usdtToken = IERC20(_usdtToken);
         oneDreamToken = IERC20(_oneDreamToken);
         pancakeSwapPair = IPancakeSwapV2Pair(_pancakeSwapPair);
+        wbnbUsdtPair = IPancakeSwapV2Pair(_wbnbUsdtPair);
 
-        // Determine which token is OneDream in the pair
+        // Determine which token is OneDream in the 1Dream/WBNB pair
         token0IsOneDream = (pancakeSwapPair.token0() == _oneDreamToken);
+
+        // Determine which token is WBNB in the WBNB/USDT pair
+        wbnbIsToken0InUsdtPair = (wbnbUsdtPair.token0() == WBNB);
 
         emit OwnershipTransferred(address(0), msg.sender);
     }
@@ -215,15 +228,15 @@ contract OneDreamVaultStaking {
     }
 
     /**
-     * @notice Update PancakeSwap pair address
+     * @notice Update PancakeSwap pair addresses (in case of migration)
      */
-    function updatePancakeSwapPair(address _newPair) external onlyOwner {
+    function updatePancakeSwapPair(address _newPair, address _newWbnbUsdtPair) external onlyOwner {
         require(_newPair != address(0), "Invalid pair address");
+        require(_newWbnbUsdtPair != address(0), "Invalid WBNB/USDT pair address");
         pancakeSwapPair = IPancakeSwapV2Pair(_newPair);
-
-        // Update token order
+        wbnbUsdtPair = IPancakeSwapV2Pair(_newWbnbUsdtPair);
         token0IsOneDream = (pancakeSwapPair.token0() == address(oneDreamToken));
-
+        wbnbIsToken0InUsdtPair = (wbnbUsdtPair.token0() == WBNB);
         emit PancakeSwapPairUpdated(_newPair, token0IsOneDream);
     }
 
@@ -405,29 +418,49 @@ contract OneDreamVaultStaking {
     // ==================== VIEW FUNCTIONS ====================
 
     /**
-     * @notice Get OneDream price in USDT from PancakeSwap
-     * @return Price with USDT decimals (e.g., 6 decimals for USDT)
+     * @notice Get current OneDream price from PancakeSwap in USDT (routed through WBNB)
+     * @return Price of OneDream in USDT (scaled by OneDream decimals)
+     * @dev Price calculation: 1DREAM → WBNB → USDT
      */
     function getOneDreamPrice() public view returns (uint256) {
-        (uint112 reserve0, uint112 reserve1, ) = pancakeSwapPair.getReserves();
-
-        if (reserve0 == 0 || reserve1 == 0) {
+        // Step 1: Get 1DREAM price in WBNB
+        (uint112 reserve0_1D, uint112 reserve1_1D, ) = pancakeSwapPair.getReserves();
+        if (reserve0_1D == 0 || reserve1_1D == 0) {
             return 0;
         }
 
-        uint256 usdtDecimals = usdtToken.decimals();
-        uint256 oneDreamDecimals = oneDreamToken.decimals();
-
-        // Calculate price: USDT per OneDream
+        uint256 oneDreamInWbnb;
         if (token0IsOneDream) {
-            // token0 = OneDream, token1 = USDT
-            // Price = reserve1 / reserve0, adjusted for decimals
-            return (uint256(reserve1) * (10 ** oneDreamDecimals)) / uint256(reserve0);
+            // token0 = 1Dream, token1 = WBNB
+            // Price = reserve1 / reserve0
+            oneDreamInWbnb = (uint256(reserve1_1D) * 1e18) / uint256(reserve0_1D);
         } else {
-            // token0 = USDT, token1 = OneDream
-            // Price = reserve0 / reserve1, adjusted for decimals
-            return (uint256(reserve0) * (10 ** oneDreamDecimals)) / uint256(reserve1);
+            // token0 = WBNB, token1 = 1Dream
+            // Price = reserve0 / reserve1
+            oneDreamInWbnb = (uint256(reserve0_1D) * 1e18) / uint256(reserve1_1D);
         }
+
+        // Step 2: Get WBNB price in USDT
+        (uint112 reserve0_WBNB, uint112 reserve1_WBNB, ) = wbnbUsdtPair.getReserves();
+        if (reserve0_WBNB == 0 || reserve1_WBNB == 0) {
+            return 0;
+        }
+
+        uint256 wbnbInUsdt;
+        if (wbnbIsToken0InUsdtPair) {
+            // token0 = WBNB, token1 = USDT
+            // Price = reserve1 / reserve0
+            wbnbInUsdt = (uint256(reserve1_WBNB) * 1e18) / uint256(reserve0_WBNB);
+        } else {
+            // token0 = USDT, token1 = WBNB
+            // Price = reserve0 / reserve1
+            wbnbInUsdt = (uint256(reserve0_WBNB) * 1e18) / uint256(reserve1_WBNB);
+        }
+
+        // Step 3: Calculate 1DREAM price in USDT
+        // 1DREAM = (1DREAM in WBNB) * (WBNB in USDT)
+        uint256 oneDreamDecimals = oneDreamToken.decimals();
+        return (oneDreamInWbnb * wbnbInUsdt * (10 ** oneDreamDecimals)) / (1e18 * 1e18);
     }
 
     /**
