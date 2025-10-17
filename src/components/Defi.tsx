@@ -50,6 +50,8 @@ export default function Defi({ isWalletConnected, walletAddress, onWalletConnect
     claimRewards,
     calculateRewardsWithPrice,
     canClaim,
+    canClaimRestakeBonus,
+    getBaseTimeRemaining,
     refresh
   } = useVaultStaking(walletAddress, signer || undefined);
 
@@ -134,9 +136,9 @@ export default function Defi({ isWalletConnected, walletAddress, onWalletConnect
       popular: style.popular || false,
       features: [
         `Daily ${pkg.dailyRate} rewards`,
-        `${pkg.baseDurationDays}-day duration`,
+        `${pkg.baseDurationDays}-day base duration`,
         `+${pkg.referralBonusDays} days per referral`,
-        `${pkg.restakingBonusRate} re-staking bonus`
+        `${pkg.restakingBonusRate} bonus after ${pkg.baseDurationDays} days`
       ]
     };
   });
@@ -356,6 +358,7 @@ export default function Defi({ isWalletConnected, walletAddress, onWalletConnect
                             <span className="text-xs text-purple-300 font-medium">Re-staking Bonus</span>
                           </div>
                           <p className="text-white text-sm">{rank.restakingBonus} of stake amount</p>
+                          <p className="text-purple-300 text-xs mt-1">Claimable after {rank.duration} days</p>
                         </div>
 
                       {/* Features List */}
@@ -615,9 +618,16 @@ export default function Defi({ isWalletConnected, walletAddress, onWalletConnect
                           ) : 'N/A'}
                         </span>
                       </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-400">Re-staking Bonus</span>
-                        <span className="text-amber-400 font-semibold">{userStake ? `${parseFloat(userStake.restakeBonus).toFixed(4)} 1DREAM` : '0 1DREAM'}</span>
+                      <div className="space-y-1">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-400">Re-staking Bonus</span>
+                          <span className="text-amber-400 font-semibold">{userStake ? `${parseFloat(userStake.restakeBonus).toFixed(4)} 1DREAM` : '0 1DREAM'}</span>
+                        </div>
+                        {userStake && !userStake.restakeBonusClaimed && (
+                          <p className="text-xs text-gray-500">
+                            Claimable after {userStake.baseDurationDays} days (base duration)
+                          </p>
+                        )}
                       </div>
                       <div className="flex justify-between items-center pt-2 border-t border-slate-700/50">
                         <span className="text-sm text-gray-400">Referrals</span>

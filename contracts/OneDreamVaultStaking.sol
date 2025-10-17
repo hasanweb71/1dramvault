@@ -346,8 +346,8 @@ contract OneDreamVaultStaking {
     }
 
     /**
-     * @notice Claim re-staking bonus (claimable after staking period ends)
-     * @dev Bonus based on package re-staking bonus rate
+     * @notice Claim re-staking bonus (claimable after base duration ends, not including referral bonus days)
+     * @dev Bonus based on package re-staking bonus rate, claimable after base 120 days
      */
     function claimRestakeBonus() external {
         require(hasActiveStake[msg.sender], "No active stake");
@@ -355,9 +355,9 @@ contract OneDreamVaultStaking {
         UserStake storage userStake = userStakes[msg.sender];
         require(!userStake.restakeBonusClaimed, "Bonus already claimed");
 
-        // Check if staking period has ended
-        uint256 endTime = userStake.startTime + (userStake.totalDurationDays * 1 days);
-        require(block.timestamp >= endTime, "Staking period not ended");
+        // Check if BASE staking period has ended (not including referral bonus days)
+        uint256 baseEndTime = userStake.startTime + (userStake.baseDurationDays * 1 days);
+        require(block.timestamp >= baseEndTime, "Base staking period not ended");
 
         // Get package details for re-staking bonus
         StakingPackage memory pkg = packages[userStake.packageId];
@@ -609,6 +609,24 @@ contract OneDreamVaultStaking {
     }
 
     /**
+     * @notice Check if user can claim re-staking bonus (base duration ended)
+     */
+    function canClaimRestakeBonus(address _user) external view returns (bool) {
+        if (!hasActiveStake[_user]) {
+            return false;
+        }
+
+        UserStake memory userStake = userStakes[_user];
+
+        if (userStake.restakeBonusClaimed) {
+            return false;
+        }
+
+        uint256 baseEndTime = userStake.startTime + (userStake.baseDurationDays * 1 days);
+        return block.timestamp >= baseEndTime;
+    }
+
+    /**
      * @notice Get time remaining until stake period ends
      */
     function getTimeRemaining(address _user) external view returns (uint256) {
@@ -624,6 +642,24 @@ contract OneDreamVaultStaking {
         }
 
         return endTime - block.timestamp;
+    }
+
+    /**
+     * @notice Get time remaining until base duration ends (for re-staking bonus)
+     */
+    function getBaseTimeRemaining(address _user) external view returns (uint256) {
+        if (!hasActiveStake[_user]) {
+            return 0;
+        }
+
+        UserStake memory userStake = userStakes[_user];
+        uint256 baseEndTime = userStake.startTime + (userStake.baseDurationDays * 1 days);
+
+        if (block.timestamp >= baseEndTime) {
+            return 0;
+        }
+
+        return baseEndTime - block.timestamp;
     }
 
     /**

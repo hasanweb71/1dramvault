@@ -238,6 +238,34 @@ export const useVaultStaking = (walletAddress: string, signer?: ethers.Signer) =
     return timeSinceLastClaim >= 86400; // 24 hours in seconds
   }, [userStake]);
 
+  // Check if user can claim re-staking bonus (base duration ended)
+  const canClaimRestakeBonus = useCallback(async () => {
+    if (!walletAddress || !userStake) return false;
+
+    try {
+      const contract = getContract();
+      const canClaim = await retryWithBackoff(() => contract.canClaimRestakeBonus(walletAddress));
+      return canClaim;
+    } catch (err) {
+      console.error('Error checking re-staking bonus eligibility:', err);
+      return false;
+    }
+  }, [walletAddress, userStake, getContract]);
+
+  // Get time remaining until base duration ends (for re-staking bonus)
+  const getBaseTimeRemaining = useCallback(async () => {
+    if (!walletAddress) return 0;
+
+    try {
+      const contract = getContract();
+      const timeRemaining = await retryWithBackoff(() => contract.getBaseTimeRemaining(walletAddress));
+      return Number(timeRemaining);
+    } catch (err) {
+      console.error('Error fetching base time remaining:', err);
+      return 0;
+    }
+  }, [walletAddress, getContract]);
+
   // Check if user is owner
   const checkIsOwner = useCallback(async () => {
     if (!walletAddress) return false;
@@ -495,13 +523,15 @@ export const useVaultStaking = (walletAddress: string, signer?: ethers.Signer) =
     error,
     stake,
     claimRewards,
-    claimRestakeBonus,
+    claimRestakeBonus: claimRestakeBonus as any,
     completeStake,
     createPackage,
     updatePackage,
     withdrawUsdt,
     refresh,
     calculateRewardsWithPrice,
-    canClaim
+    canClaim,
+    canClaimRestakeBonus,
+    getBaseTimeRemaining
   };
 };
