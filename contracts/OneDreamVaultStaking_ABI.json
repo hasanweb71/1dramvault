@@ -296,7 +296,8 @@
       { "internalType": "uint256", "name": "usdtAmount", "type": "uint256" },
       { "internalType": "uint256", "name": "startTime", "type": "uint256" },
       { "internalType": "uint256", "name": "lastClaimTime", "type": "uint256" },
-      { "internalType": "bool", "name": "isActive", "type": "bool" }
+      { "internalType": "bool", "name": "isActive", "type": "bool" },
+      { "internalType": "string", "name": "packageName", "type": "string" }
     ],
     "stateMutability": "view",
     "type": "function"
@@ -305,8 +306,6 @@
     "inputs": [{ "internalType": "address", "name": "_user", "type": "address" }],
     "name": "getUserStakeBonus",
     "outputs": [
-      { "internalType": "uint256", "name": "restakeBonus", "type": "uint256" },
-      { "internalType": "bool", "name": "restakeBonusClaimed", "type": "bool" },
       { "internalType": "uint256", "name": "restakeBonus", "type": "uint256" },
       { "internalType": "bool", "name": "restakeBonusClaimed", "type": "bool" },
       { "internalType": "address", "name": "referrer", "type": "address" }
