@@ -20,6 +20,7 @@ export default function Defi({ isWalletConnected, walletAddress, onWalletConnect
   const [calculatedRewards, setCalculatedRewards] = useState<string>('0');
   const [loadingRewards, setLoadingRewards] = useState(false);
   const [claimingRewards, setClaimingRewards] = useState(false);
+  const [remainingDays, setRemainingDays] = useState<number>(0);
 
   // Initialize provider and signer
   React.useEffect(() => {
@@ -75,6 +76,26 @@ export default function Defi({ isWalletConnected, walletAddress, onWalletConnect
       setReferrerAddress(ref);
     }
   }, [walletAddress]);
+
+  // Fetch remaining days when user has active stake
+  React.useEffect(() => {
+    const fetchRemainingDays = async () => {
+      if (userStake?.isActive) {
+        const remainingSeconds = await getBaseTimeRemaining();
+        const days = Math.ceil(remainingSeconds / (24 * 60 * 60));
+        setRemainingDays(days);
+      }
+    };
+
+    fetchRemainingDays();
+
+    // Update every minute if stake is active
+    const interval = userStake?.isActive ? setInterval(fetchRemainingDays, 60000) : null;
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [userStake, getBaseTimeRemaining]);
 
   const stats = [
     { label: 'Total USDT Stake', value: contractStats ? `${parseFloat(contractStats.totalUsdtStaked).toLocaleString()} USDT` : '0', icon: DollarSign, color: 'from-blue-500 to-blue-600' },
@@ -608,10 +629,10 @@ export default function Defi({ isWalletConnected, walletAddress, onWalletConnect
                         <span className="text-purple-400 font-semibold">
                           {userStake ? (
                             <span>
-                              {userStake.baseDurationDays} days
-                              {userStake.referralCount > 0 && (
+                              {remainingDays > 0 ? `${remainingDays} days remaining` : 'Completed'}
+                              {userStake.referralCount > 0 && remainingDays > 0 && (
                                 <span className="text-green-400 text-xs ml-1">
-                                  (+{userStake.totalDurationDays - userStake.baseDurationDays} bonus)
+                                  (+{userStake.referralCount} referrals)
                                 </span>
                               )}
                             </span>
