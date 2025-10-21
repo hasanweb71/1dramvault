@@ -252,6 +252,20 @@ export const useVaultStaking = (walletAddress: string, signer?: ethers.Signer) =
     }
   }, [walletAddress, userStake, getContract]);
 
+  // Get total time remaining (including bonuses)
+  const getTimeRemaining = useCallback(async () => {
+    if (!walletAddress) return 0;
+
+    try {
+      const contract = getContract();
+      const timeRemaining = await retryWithBackoff(() => contract.getTimeRemaining(walletAddress));
+      return Number(timeRemaining);
+    } catch (err) {
+      console.error('Error fetching time remaining:', err);
+      return 0;
+    }
+  }, [walletAddress, getContract]);
+
   // Get time remaining until base duration ends (for re-staking bonus)
   const getBaseTimeRemaining = useCallback(async () => {
     if (!walletAddress) return 0;
@@ -532,6 +546,7 @@ export const useVaultStaking = (walletAddress: string, signer?: ethers.Signer) =
     calculateRewardsWithPrice,
     canClaim,
     canClaimRestakeBonus,
+    getTimeRemaining,
     getBaseTimeRemaining
   };
 };

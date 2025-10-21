@@ -52,6 +52,7 @@ export default function Defi({ isWalletConnected, walletAddress, onWalletConnect
     calculateRewardsWithPrice,
     canClaim,
     canClaimRestakeBonus,
+    getTimeRemaining,
     getBaseTimeRemaining,
     refresh
   } = useVaultStaking(walletAddress, signer || undefined);
@@ -81,7 +82,7 @@ export default function Defi({ isWalletConnected, walletAddress, onWalletConnect
   React.useEffect(() => {
     const fetchRemainingDays = async () => {
       if (userStake?.isActive) {
-        const remainingSeconds = await getBaseTimeRemaining();
+        const remainingSeconds = await getTimeRemaining();
         const days = Math.ceil(remainingSeconds / (24 * 60 * 60));
         setRemainingDays(days);
       }
@@ -95,7 +96,7 @@ export default function Defi({ isWalletConnected, walletAddress, onWalletConnect
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [userStake, getBaseTimeRemaining]);
+  }, [userStake, getTimeRemaining]);
 
   const stats = [
     { label: 'Total USDT Stake', value: contractStats ? `${parseFloat(contractStats.totalUsdtStaked).toLocaleString()} USDT` : '0', icon: DollarSign, color: 'from-blue-500 to-blue-600' },
