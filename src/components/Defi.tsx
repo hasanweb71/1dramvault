@@ -159,8 +159,7 @@ export default function Defi({ isWalletConnected, walletAddress, onWalletConnect
       features: [
         `Daily ${pkg.dailyRate} rewards`,
         `${pkg.baseDurationDays}-day base duration`,
-        `+${pkg.referralBonusDays} days per referral`,
-        `${pkg.restakingBonusRate} bonus after ${pkg.baseDurationDays} days`
+        `+${pkg.referralBonusDays} days per referral`
       ]
     };
   });
