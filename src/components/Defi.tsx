@@ -647,7 +647,7 @@ export default function Defi({ isWalletConnected, walletAddress, onWalletConnect
                         </div>
                         {userStake && !userStake.restakeBonusClaimed && (
                           <p className="text-xs text-gray-500">
-                            Claimable after {userStake.baseDurationDays} days (base duration)
+                            {userStake.restakeBonusPercent}% Bonus on Re-stake
                           </p>
                         )}
                       </div>
